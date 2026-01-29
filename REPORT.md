@@ -12,7 +12,7 @@ sources, I have provided in-text citations and included the sources in the
 final reference list.*
 
  ☒ *Where I have used AI, I have cited and
-referenced appropriately.*
+referenced appropriately*
 
 # **Introduction**
 
