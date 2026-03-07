@@ -12,7 +12,7 @@ sources, I have provided in-text citations and included the sources in the
 final reference list.*
 
  ☒ *Where I have used AI, I have cited and
-referenced appropriately*
+referenced appropriately.*
 
 # **Introduction**
 
@@ -82,9 +82,6 @@ The adventure is built on branching storylines, where each choice has its own we
 
 ---
 
-<style>
-</style>
-
 | *Feature/Task*        | *Inputs*                   | *Process*                                                                  | *Output*                                  |
 | --------------------- | -------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
 | *Start game*          | *None (program launch)*    | *Initialise game variables, set default player stats, prepare first scene* | *Welcome message*                         |
@@ -98,3 +95,15 @@ The adventure is built on branching storylines, where each choice has its own we
 | *Update player stats* | *Choice result*            | *Update health, inventory, score, etc.*                                    | *Updated player stats*                    |
 | *Use item*            | *Item stats*               | *Apply item effects (heal, boost stats, unlock path)*                      | *Updated stats or unlocked option.*       |
 | *End game*            | *Final scene*              | *Calculate final score and end the game.*                                  | *Victory message and final score*         |
+
+
+
+### Algorithm
+
+![gfd](/Users/dushesssx/Downloads/453%20algorithm%20-%20Frame%202.jpg)
+
+![hgf](/Users/dushesssx/Downloads/453%20algorithm%20-%20Frame%203.jpg)
+
+![gfgf](/Users/dushesssx/Downloads/453%20algorithm%20-%20Frame%202-2.jpg)
+
+### Class Digram
