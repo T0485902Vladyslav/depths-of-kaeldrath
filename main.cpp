@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <thread>
 using namespace std;
 
 enum class ItemType {
@@ -52,7 +54,6 @@ private:
     int defense;
     int score;
     vector<Item> inventory;
-
 
 public:
     Player(string cname) {
@@ -161,6 +162,73 @@ public:
         cout << "Defense: " << defense << endl;
         cout << "Lives: " << lives << endl;
         cout << "Score: " << score << endl;
+    }
+};
+
+class Enemy {
+private:
+    string name;
+    int health;
+    int attack;
+    int defense;
+    int scoreReward;
+    bool hasDrop;
+    Item dropItem;
+public:
+    Enemy(string cname, int chealth, int cattack, int cdefense,int cscoreReward)
+        : dropItem("", ItemType::WEAPON, 0, "") {
+        name = cname;
+        health = chealth;
+        attack = cattack;
+        defense = cdefense;
+        scoreReward = cscoreReward;
+        hasDrop = false;
+    }
+
+    Enemy(string cname, int chealth, int cattack, int cdefense,int cscoreReward, Item cdropItem)
+       : dropItem(cdropItem) {
+        name = cname;
+        health = chealth;
+        attack = cattack;
+        defense = cdefense;
+        scoreReward = cscoreReward;
+        hasDrop = true;
+    }
+
+    string getName() const {
+        return name;
+    }
+    int getHealth() const {
+        return health;
+    }
+    int getAttack() const {
+        return attack;
+    }
+    int getDefense() const {
+        return defense;
+    }
+    int getScoreReward() const {
+        return scoreReward;
+    }
+    bool getHasDrop() const {
+        return hasDrop;
+    }
+    Item getDropItem() const {
+        return dropItem;
+    }
+    bool isAlive() const {
+        return health > 0;
+    }
+
+    void takeDamage(int damage) {
+        int actualDamage = health - damage;
+        if (actualDamage < 0) {
+            actualDamage = 0;
+        }
+        health -= actualDamage;
+        if (health < 0) {
+            health = 0;
+        }
     }
 };
 
@@ -311,6 +379,89 @@ public:
         return next;
     }
 };
+
+class CombatScene : public Scene {
+private:
+    Enemy enemy;
+
+    void runCombat(Player& player) {
+        cout << "\n-----Your enemy" << enemy.getName() << "'s stats-----"<< endl;
+        cout << "| HP:  " << enemy.getHealth() << endl;
+        cout << "| ATK: " << enemy.getAttack() << endl;
+        cout << "| DEF: " << enemy.getDefense() << endl;
+
+        Enemy currentEnemy = enemy;
+        while (currentEnemy.isAlive() && player.isAlive()) {
+            int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
+            if (playerDamage < 0) {
+                playerDamage = 0;
+            }
+            currentEnemy.takeDamage(playerDamage);
+            cout << "\nYou attack " << currentEnemy.getName() << " for " << playerDamage << " damage!" <<
+                " (Enemy HP: " << currentEnemy.getHealth() << ")" << endl;
+
+            if (!currentEnemy.isAlive()) {
+                break;
+            }
+
+            this_thread::sleep_for(chrono::milliseconds(800)); // pause for better effect of fight
+
+            int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
+            if (enemyDamage < 0) {
+                enemyDamage = 0;
+            }
+            player.takeDamage(enemyDamage);
+            cout << currentEnemy.getName() << " attacks you for " << enemyDamage << " damage!" <<
+                " (Your HP: " << player.getHealth() << ")" << endl;
+
+            this_thread::sleep_for(chrono::milliseconds(800));
+        }
+        if (currentEnemy.isAlive()) {
+            cout << "\nYou were defeated by " << enemy.getName() << "..." << endl;
+        }else {
+            cout << "\nYou defeated " << enemy.getName() << "!" << endl;
+            player.addScore(currentEnemy.getScoreReward());
+            cout << "Your score increased by " << currentEnemy.getScoreReward() << endl;
+
+            if (currentEnemy.getHasDrop()) {
+                int dropRoll = rand() % 10;
+                if (dropRoll < 4) {
+                    cout << "After defeating the " << currentEnemy.getName() << " you receive loot "
+                    << currentEnemy.getDropItem().getName() << "!" << endl;
+                    player.addItem(currentEnemy.getDropItem());
+                }
+            }
+        }
+    }
+
+public:
+    CombatScene(int cindex, string cdescription,string cchoiceA, string cchoiceB,
+        string cconsequenceA, string cconsequenceB, int cnextSceneA, int cnextSceneB, Enemy cenemy)
+    : Scene(cindex, cdescription,cchoiceA, cchoiceB,
+                cconsequenceA, cconsequenceB,cnextSceneA, cnextSceneB), enemy(cenemy){}
+
+    int play(Player& player) override {
+        cout << "\n" << description << endl;
+        int next = presentChoices(player);
+        if (next == nextSceneIdB) {
+            int roll = rand() % 10;
+            if (roll < 3) {
+                cout << "\nYou managed to escape, but not without a hit..." << endl;
+                player.takeDamage(10);
+                cout << "You take 15 damage while running" << endl;
+            }else {
+                cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
+                int enemyDamage = enemy.getAttack() + (rand() % 5) - 2;
+                player.takeDamage(enemyDamage);
+                cout << enemy.getName() << " hits you for " << enemyDamage << " damage." << endl;
+                cout << "You are forced to fight!" << endl;
+                runCombat(player);
+            }
+        }
+        return next;
+    }
+};
+
 
 class GameManager {
 private:
@@ -531,13 +682,13 @@ public:
             currentSceneID = next;
         }
 
-        // if (!player.isAlive()) {
-        //     cout << "\n========================================" << endl;
-        //     cout << "          *** GAME OVER ***" << endl;
-        //     cout << "========================================" << endl;
-        //     cout << "You ran out of lives, " << player.getName() << "." << endl;
-        //     cout << "Final Score: " << player.getScore() << endl;
-        // }
+        if (!player.isAlive()) {
+            cout << "\n========================================" << endl;
+            cout << "          *** GAME OVER ***" << endl;
+            cout << "========================================" << endl;
+            cout << "You ran out of lives, " << player.getName() << "." << endl;
+            cout << "Final Score: " << player.getScore() << endl;
+        }
     }
 };
 
