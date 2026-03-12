@@ -3,6 +3,8 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <cstdlib>
+#include <ctime>
 using namespace std;
 
 enum class ItemType {
@@ -20,12 +22,16 @@ private:
     string name;
     int effect_value;
     string description;
+    int durability;
+    int maxDurability;
 public:
-    Item(string cname, ItemType ctype, int ceffect_value, string cdescription) {
+    Item(string cname, ItemType ctype, int ceffect_value, string cdescription, int cdurability = 0) {
         name = cname;
         type = ctype;
         effect_value = ceffect_value;
         description = cdescription;
+        durability = cdurability;
+        maxDurability = cdurability;
     }
     ItemType getType() const{
         return type;
@@ -39,6 +45,22 @@ public:
     string getDescription() const{
         return description;
     }
+    int getDurability() const {
+        return durability;
+    }
+    int getMaxDurability() const {
+        return maxDurability;
+    }
+    bool isBroken() const {
+        return durability <= 0;
+    }
+
+    void reduceDurability() {
+        if (durability > 0) {
+            durability--;
+        }
+    }
+
     void printItemInfo() const{
         cout << "{" << name << "}" << description << endl;
         cout << "Effect: " << effect_value << endl;
@@ -50,28 +72,34 @@ private:
     string name;
     int health;
     int lives;
-    int attack_damage;
+    int base_attack;
     int defense;
     int score;
     vector<Item> inventory;
+    Item* equippedWeapon;
+    Item* equippedArmour;
 
 public:
     Player(string cname) {
         name = cname;
         health = MAX_HEALTH;
         lives = 3;
-        attack_damage = 15;
+        base_attack = 10;
         defense = 0;
         score = 0;
+        equippedWeapon = nullptr;
+        equippedArmour = nullptr;
     }
 
     Player() {
         name = "";
         health = MAX_HEALTH;
         lives = 3;
-        attack_damage = 15;
+        base_attack = 10;
         defense = 0;
         score = 0;
+        equippedWeapon = nullptr;
+        equippedArmour = nullptr;
     }
 
     string getName() {
@@ -84,10 +112,18 @@ public:
         return lives;
     }
     int getAttackDamage() {
-        return attack_damage;
+        int attack = base_attack;
+        if (equippedWeapon != nullptr && !equippedArmour -> isBroken()) {
+            attack = base_attack + equippedWeapon -> getEffectValue();
+        }
+        return attack;
     }
     int getDefense() {
-        return defense;
+        int actualDefense = 0;
+        if (equippedArmour != nullptr && !equippedArmour -> isBroken()) {
+            actualDefense = equippedArmour -> getEffectValue();
+        }
+        return actualDefense;
     }
     int getScore() {
         return score;
@@ -106,12 +142,29 @@ public:
             actualDamage = 0;
         }
         health -= actualDamage;
+        if (equippedArmour != nullptr) {
+            equippedArmour -> reduceDurability();
+            if (equippedArmour -> isBroken()) {
+                cout << "Your " << equippedArmour -> getName() << " broke" << endl;
+                equippedArmour = nullptr;
+            }
+        }
         if (health <= 0) {
             health = 0;
             lives--;
             if (lives > 0) {
                 health = MAX_HEALTH;
                 cout << "You lost a life! Life remaining: " << lives << endl;
+            }
+        }
+    }
+
+    void reduceWeaponDurability() {
+        if (equippedWeapon !=nullptr) {
+            equippedWeapon -> reduceDurability();
+            if (equippedWeapon -> isBroken()) {
+                cout << "Your " << equippedWeapon -> getName() << " broke" << endl;
+                equippedWeapon = nullptr;
             }
         }
     }
@@ -128,20 +181,33 @@ public:
         bool success = false;
         if (inventory.size() < MAX_INVENTORY) {
             inventory.push_back(item);
-            switch (item.getType()) {
-                case ItemType::WEAPON: attack_damage += item.getEffectValue();
-                    break;
-                case ItemType::ARMOUR: defense += item.getEffectValue();
-                    break;
-                case ItemType::FOOD: health += item.getEffectValue();
-                    break;
-            }
             cout << "You picked up: " << item.getName() << endl;
             success = true;
         }else {
             cout << "Inventory is full." << endl;
         }
         return success;
+    }
+
+    void equipItem(int index) {
+        if (index >= 0 && index < (int)inventory.size()) {
+            Item& item = inventory[index];
+            if (item.getType() == ItemType::WEAPON) {
+                equippedWeapon = &item;
+                cout << "Equipped: " << item.getName() << endl;
+            } else if (item.getType() == ItemType::ARMOUR) {
+                equippedArmour = &item;
+                cout << "Equipped: " << item.getName() << endl;
+            } else {
+                cout << "You cannot equip food" << endl;
+            }
+        } else {
+            cout << "Invalid item" << endl;
+        }
+    }
+
+    void useFood(int index) {
+
     }
 
     void showInventory() {
@@ -375,7 +441,6 @@ public:
         }else{
             player.addItem(itemB);
         }
-
         return next;
     }
 };
@@ -391,6 +456,9 @@ private:
         cout << "| DEF: " << enemy.getDefense() << endl;
 
         Enemy currentEnemy = enemy;
+
+        this_thread::sleep_for(chrono::milliseconds(1500));
+
         while (currentEnemy.isAlive() && player.isAlive()) {
             int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
             if (playerDamage < 0) {
@@ -404,7 +472,7 @@ private:
                 break;
             }
 
-            this_thread::sleep_for(chrono::milliseconds(800)); // pause for better effect of fight
+            this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
 
             int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
             if (enemyDamage < 0) {
@@ -414,7 +482,7 @@ private:
             cout << currentEnemy.getName() << " attacks you for " << enemyDamage << " damage!" <<
                 " (Your HP: " << player.getHealth() << ")" << endl;
 
-            this_thread::sleep_for(chrono::milliseconds(800));
+            this_thread::sleep_for(chrono::milliseconds(1000));
         }
         if (currentEnemy.isAlive()) {
             cout << "\nYou were defeated by " << enemy.getName() << "..." << endl;
@@ -948,6 +1016,7 @@ public:
 };
 
 int main() {
+    srand(time(0));
     GameManager game;
     game.run();
     return 0;
