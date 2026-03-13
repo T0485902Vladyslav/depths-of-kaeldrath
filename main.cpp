@@ -5,6 +5,7 @@
 #include <thread>
 #include <cstdlib>
 #include <ctime>
+#include <limits>
 using namespace std;
 
 enum class ItemType {
@@ -72,7 +73,7 @@ private:
     string name;
     int health;
     int lives;
-    int base_attack;
+    int baseAttack;
     int defense;
     int score;
     vector<Item> inventory;
@@ -84,7 +85,7 @@ public:
         name = cname;
         health = MAX_HEALTH;
         lives = 3;
-        base_attack = 10;
+        baseAttack = 10;
         defense = 0;
         score = 0;
         equippedWeapon = nullptr;
@@ -95,7 +96,7 @@ public:
         name = "";
         health = MAX_HEALTH;
         lives = 3;
-        base_attack = 10;
+        baseAttack = 10;
         defense = 0;
         score = 0;
         equippedWeapon = nullptr;
@@ -111,14 +112,14 @@ public:
     int getLives() {
         return lives;
     }
-    int getAttackDamage() {
-        int attack = base_attack;
-        if (equippedWeapon != nullptr && !equippedArmour -> isBroken()) {
-            attack = base_attack + equippedWeapon -> getEffectValue();
+    int getAttackDamage() const{
+        int attack = baseAttack;
+        if (equippedWeapon != nullptr && !equippedWeapon -> isBroken()) {
+            attack = baseAttack + equippedWeapon -> getEffectValue();
         }
         return attack;
     }
-    int getDefense() {
+    int getDefense() const{
         int actualDefense = 0;
         if (equippedArmour != nullptr && !equippedArmour -> isBroken()) {
             actualDefense = equippedArmour -> getEffectValue();
@@ -207,25 +208,91 @@ public:
     }
 
     void useFood(int index) {
-
+        if (index < 0 || index >= inventory.size()) {
+            cout << "Invalid item." << endl;
+        } else if (inventory[index].getType() != ItemType::FOOD) {
+            cout << "You can only use food items." << endl;
+        } else {
+            Item& item = inventory[index];
+            heal(item.getEffectValue());
+            cout << "You used " << item.getName() << ". Health +" << item.getEffectValue() << endl;
+            cout << "Current health: " << health << "/" << MAX_HEALTH << endl;
+            inventory.erase(inventory.begin() + index);
+        }
     }
 
     void showInventory() {
         if (inventory.empty()) {
             cout << "Your inventory is empty" << endl;
-            return;
+        }else {
+            cout << "\n=== Inventory ===" << endl;
+            for (int i = 0; i < inventory.size(); i++) {
+                cout << i + 1 << ") ";
+                inventory[i].printItemInfo();
+            }
         }
-        cout << "=== Inventory ===" << endl;
-        for (int i = 0; i < inventory.size(); i++) {
-            inventory[i].printItemInfo();
+        cout << "\n=== Equipped ===" << endl;
+        if (equippedWeapon != nullptr) {
+            cout << "WEAPON: " << equippedWeapon -> getName() << endl;
+            cout << "Durability: " << equippedWeapon ->getDurability() << "/" << equippedWeapon -> getMaxDurability() << endl;
+        }else {
+            cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
+        }
+        if (equippedArmour != nullptr) {
+            cout << "ARMOUR: " << equippedArmour -> getName() << endl;
+            cout << "Durability: " << equippedArmour -> getDurability() << "/" << equippedArmour -> getMaxDurability() << endl;
+        }else {
+            cout << "Armour: none";
+        }
+
+        cout << "\nE) Equip item   U) Use food   Back) any other key" << endl;
+
+        char opt;
+
+        if (!(cin >> opt)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input" << endl;
+        }
+        else {
+            opt = toupper(opt);
+
+            if (opt == 'E' || opt == 'U') {
+                int num;
+                bool validInput = false;
+
+                while (!validInput) {
+                    cout << "Enter item number: ";
+
+                    if (!(cin >> num)) {
+                        cout << "Invalid input. Please enter a number.\n";
+
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    }
+                    else if (num <= 0) {
+                        cout << "Number must be greater than 0.\n";
+                    }
+                    else {
+                        validInput = true;
+                    }
+                }
+
+                if (opt == 'E') {
+                    equipItem(num - 1);
+                }
+                else {
+                    useFood(num - 1);
+                }
+            }
         }
     }
 
     void showPlayerStats() const {
         cout << "===" << name << "'s Stats ===" << endl;
-        cout << "Health: " << health << endl;
-        cout << "Attack damage: " << attack_damage << endl;
-        cout << "Defense: " << defense << endl;
+        cout << "Health: " << health << "/" << MAX_HEALTH << endl;
+        cout << "Damage: " << getAttackDamage() << endl;
+        cout << "Defense: " << getDefense() << endl;
         cout << "Lives: " << lives << endl;
         cout << "Score: " << score << endl;
     }
@@ -465,6 +532,7 @@ private:
                 playerDamage = 0;
             }
             currentEnemy.takeDamage(playerDamage);
+            player.reduceWeaponDurability();
             cout << "\nYou attack " << currentEnemy.getName() << " for " << playerDamage << " damage!" <<
                 " (Enemy HP: " << currentEnemy.getHealth() << ")" << endl;
 
@@ -552,8 +620,8 @@ private:
         "You take the sword. It is heavy but sharp.",
         "You take the bread and eat it. You feel stronger.",
         1, 1,
-        Item("Old Sword", ItemType::WEAPON, 5,  "A heavy sword. Attack +5"),
-        Item("Bread",     ItemType::FOOD,   20, "Restores health. Health +20")
+        Item("Old Sword", ItemType::WEAPON, 5,  "A heavy sword. Attack +5", 10),
+        Item("Bread",     ItemType::FOOD,   20, "Restores health. Health +20", 0)
     ));
 
     // ---- SCENE 1: The Dark Hall (Lore) ----
@@ -605,7 +673,7 @@ private:
         "You try to escape...",
         6, 6,
         Enemy("Skeleton Warrior", 35, 12, 2, 15,
-            Item("Bone Sword", ItemType::WEAPON, 3, "A cracked blade. Attack +3"))
+            Item("Bone Sword", ItemType::WEAPON, 3, "A cracked blade. Attack +3", 6))
     ));
 
     // ---- SCENE 4: Quiet Corridor (Item) ----
@@ -621,8 +689,8 @@ private:
         "You pick up the shield. It is light but solid.",
         "You put on the vest. It fits well.",
         6, 6,
-        Item("Torch Shield", ItemType::ARMOUR, 4, "Light protection. Defense +4"),
-        Item("Leather Vest", ItemType::ARMOUR, 6, "Decent armour. Defense +6")
+        Item("Torch Shield", ItemType::ARMOUR, 4, "Light protection. Defense +4", 8),
+        Item("Leather Vest", ItemType::ARMOUR, 6, "Decent armour. Defense +6", 10)
     ));
 
     // ---- SCENE 6: Old Storage Room (Item) ----
@@ -637,8 +705,8 @@ private:
         "You grab a solid iron sword.",
         "You break the lock. Inside is a health potion.",
         7, 7,
-        Item("Iron Sword",    ItemType::WEAPON, 6, "A solid blade. Attack +6"),
-        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30")
+        Item("Iron Sword",    ItemType::WEAPON, 6, "A solid blade. Attack +6", 10),
+        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30", 0)
     ));
 
     // ---- SCENE 7: Map Riddle Gate (Puzzle) ----
@@ -676,22 +744,22 @@ private:
         Enemy("Goblin Ambushers", 45, 14, 3, 20)
     ));
 
-    // ---- SCENE 9: Ghost of the Old Soldier (Lore) ----
+    // ---- SCENE 9: Ghost of the Old Soldier (Item) ----
     // Crawling through the wall you find a hidden chamber with a ghost
     // Both -> Scene 23
-    scenes.push_back(new Scene(
+        scenes.push_back(new ItemScene(
         9,
         "You crawl through the wall into a hidden chamber.\n"
         "A faint blue glow fills the room.\n"
         "The ghost of an old soldier stands before you.\n"
         "He says: I died here a hundred years ago. Take my sword.\n"
-        "It will serve you better than it served me.\n"
         "A glowing sword appears on the floor before you.",
-        "Take the ghost sword",
-        "Leave it and move on",
-        "You pick up the sword. It hums with energy. Attack +8",
+        "Take the ghost sword", "Leave it and move on",
+        "You pick up the sword. It hums with energy.",
         "You leave it. The ghost fades silently.",
-        23, 23
+        23, 23,
+        Item("Ghost Sword", ItemType::WEAPON, 8, "Hums with energy. Attack +8", 12),
+        Item("",            ItemType::FOOD,   0, "", 0)
     ));
 
     // ---- SCENE 23: Goblin Patrol (Combat) ----
@@ -708,7 +776,7 @@ private:
         "You turn and run...",
         14, 14,
         Enemy("Goblin Patrol", 50, 13, 2, 20,
-            Item("Goblin Spear", ItemType::WEAPON, 4, "A crude spear. Attack +4"))
+            Item("Goblin Spear", ItemType::WEAPON, 4, "A crude spear. Attack +4", 7))
     ));
 
     // ---- SCENE 14: Skeleton Captain (Combat) ----
@@ -724,7 +792,7 @@ private:
         "You circle him slowly, looking for an opening...",
         99, 99,
         Enemy("Skeleton Captain", 70, 18, 8, 50,
-            Item("Captain's Axe", ItemType::WEAPON, 10, "A heavy battle axe. Attack +10"))
+            Item("Captain's Axe", ItemType::WEAPON, 10, "A heavy battle axe. Attack +10", 12))
     ));
 
     // ==================== WEST WING ====================
@@ -774,8 +842,8 @@ private:
         "You pick up the axe. It is crude but effective.",
         "You put on the goblin armour. Smells bad but works.",
         13, 13,
-        Item("Goblin Axe",   ItemType::WEAPON, 7, "Crude but sharp. Attack +7"),
-        Item("Goblin Armour",ItemType::ARMOUR, 5, "Smells terrible. Defense +5")
+        Item("Goblin Axe",   ItemType::WEAPON, 7, "Crude but sharp. Attack +7", 8),
+        Item("Goblin Armour",ItemType::ARMOUR, 5, "Smells terrible. Defense +5", 7)
     ));
 
     // ---- SCENE 13: 6x7 Door Puzzle (Puzzle) ----
@@ -827,8 +895,8 @@ private:
         "You put on the gauntlets. Your fists feel stronger.",
         "You lift the war hammer. It is heavy but powerful.",
         24, 24,
-        Item("Steel Gauntlets", ItemType::ARMOUR, 7, "Heavy hand armour. Defense +7"),
-        Item("War Hammer",      ItemType::WEAPON, 8, "Slow but devastating. Attack +8")
+        Item("Steel Gauntlets", ItemType::ARMOUR, 7, "Heavy hand armour. Defense +7", 10),
+        Item("War Hammer",      ItemType::WEAPON, 8, "Slow but devastating. Attack +8", 10)
     ));
 
     // ---- SCENE 24: Skeleton Archer (Combat) ----
@@ -845,7 +913,7 @@ private:
         "You weave between arrows and rush it...",
         18, 18,
         Enemy("Skeleton Archer", 40, 15, 1, 20,
-            Item("Elven Bow", ItemType::WEAPON, 5, "A fine bow. Attack +5"))
+            Item("Elven Bow", ItemType::WEAPON, 5, "A fine bow. Attack +5", 10))
     ));
 
     // ---- SCENE 18: Clock Riddle (Puzzle) ----
@@ -880,7 +948,7 @@ private:
         "You roll to the side...",
         22, 22,
         Enemy("Goblin Shaman", 45, 17, 2, 25,
-            Item("Shaman Staff", ItemType::WEAPON, 6, "Crackles with energy. Attack +6"))
+            Item("Shaman Staff", ItemType::WEAPON, 6, "Crackles with energy. Attack +6", 9))
     ));
 
     // ---- SCENE 20: Long Way Around (Item) ----
@@ -897,8 +965,8 @@ private:
         "You put on the chainmail. Solid protection.",
         "You pick up the axe. Well balanced.",
         22, 22,
-        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8"),
-        Item("Battle Axe",     ItemType::WEAPON, 7, "Well balanced axe. Attack +7")
+        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8", 12),
+        Item("Battle Axe",     ItemType::WEAPON, 7, "Well balanced axe. Attack +7", 10)
     ));
 
     // ---- SCENE 22: Dark Wizard (Combat) ----
@@ -915,7 +983,7 @@ private:
         "You sprint for the crown...",
         99, 99,
         Enemy("Dark Wizard", 80, 20, 5, 60,
-            Item("Wizard's Staff", ItemType::WEAPON, 12, "Ancient and powerful. Attack +12"))
+            Item("Wizard's Staff", ItemType::WEAPON, 12, "Ancient and powerful. Attack +12", 15))
         ));
     }
 
@@ -941,34 +1009,29 @@ public:
         }
     }
 
-    void run() {
-        showMainMenu();
-        int menuChoice;
-        cin >> menuChoice;
-        while (menuChoice < 1 || menuChoice > 2) {
-            cout << "Invalid choice. Enter 1 or 2: ";
-            cin >> menuChoice;
-        }
-
-        if (menuChoice == 2) {
-            cout << "\nGoodbye!" << endl;
-            return;
-        }
-
+    void setupPlayer() {
         string name;
+
         cout << "\nEnter your name, brave adventurer: ";
         cin.ignore();
         getline(cin, name);
+
         while (name.empty()) {
             cout << "Name cannot be empty. Try again: ";
             getline(cin, name);
         }
+
         player = Player(name);
         currentSceneID = 0;
-        cout << "\nWelcome, " << name << "! Your quest begins..." << endl;
 
+        cout << "\nWelcome, " << name << "! Your quest begins..." << endl;
+    }
+
+    void gameLoop() {
         while (player.isAlive()) {
+
             cout << "\n[C] Continue   [I] Inventory & Stats: ";
+
             char opt;
             cin >> opt;
             opt = toupper(opt);
@@ -986,6 +1049,7 @@ public:
             }
 
             Scene* current = nullptr;
+
             for (int i = 0; i < scenes.size(); i++) {
                 if (scenes[i]->getSceneId() == currentSceneID) {
                     current = scenes[i];
@@ -999,6 +1063,7 @@ public:
             }
 
             int next = current->play(player);
+
             if (!player.isAlive()) {
                 break;
             }
@@ -1012,6 +1077,26 @@ public:
             cout << "You ran out of lives, " << player.getName() << "." << endl;
             cout << "Final Score: " << player.getScore() << endl;
         }
+    }
+
+    void run() {
+        showMainMenu();
+
+        int menu_choice;
+        cin >> menu_choice;
+
+        while (menu_choice < 1 || menu_choice > 2) {
+            cout << "Invalid choice. Enter 1 or 2: ";
+            cin >> menu_choice;
+        }
+
+        if (menu_choice == 2) {
+            cout << "\nGoodbye!" << endl;
+            return;
+        }
+
+        setupPlayer();
+        gameLoop();
     }
 };
 
