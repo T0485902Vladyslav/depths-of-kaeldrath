@@ -457,20 +457,32 @@ public:
         cout << "B) " << choiceB << endl;
         cout << "----------------------------------------------" << endl;
 
-        char userChoice;
-        do {
+        char userChoice = ' ';
+        bool validInput = false;
+
+        while (!validInput) {
             cout << player.getName() << ", what do you do? (A/B): ";
-            cin >> userChoice;
-            userChoice = toupper(userChoice);
 
-            if (userChoice != 'A' && userChoice != 'B')
-                cout << "Invalid input. Please enter A or B.\n";
+            string line;
+            getline(cin, line);
 
-        } while (userChoice != 'A' && userChoice != 'B');
+            if (line.empty()) {
+                cout << "Input cannot be empty. Please enter A or B.\n";
+            } else {
+                userChoice = toupper(line[0]);
+
+                if (userChoice == 'A' || userChoice == 'B') {
+                    validInput = true;
+                } else {
+                    cout << "Invalid input. Please enter A or B.\n";
+                }
+            }
+        }
+
         if (userChoice == 'A') {
             cout << "\n>> " << consequenceA << endl;
             return nextSceneIdA;
-        }else {
+        } else {
             cout << "\n>> " << consequenceB << endl;
             return nextSceneIdB;
         }
@@ -504,18 +516,19 @@ public:
         cout << "\n" << description << endl;
 
         int next = presentChoices(player);
+
         if (next == nextSceneIdA) {
             cout << "\n" << question << endl;
-            cout << "\n" << player.getName()<< ", you must answer to proceed."<< endl;
+            cout << "\n" << player.getName() << ", you must answer to proceed." << endl;
             cout << "Your answer: ";
 
             string userAnswer;
-            cin >> userAnswer;
+            getline(cin, userAnswer);
 
-            for (int i = 0; i < answer.size(); i++) {
+            for (int i = 0; i < (int)answer.size(); i++) {
                 answer[i] = tolower(answer[i]);
             }
-            for (int i = 0; i < userAnswer.size(); i++) {
+            for (int i = 0; i < (int)userAnswer.size(); i++) {
                 userAnswer[i] = tolower(userAnswer[i]);
             }
 
@@ -523,12 +536,12 @@ public:
                 cout << "\n>> Correct! Well done, " << player.getName() << endl;
                 player.addScore(scoreReward);
                 cout << "Your score has increased by " << scoreReward << endl;
-            }else {
+            } else {
                 cout << "Wrong! The answer was: " << answer << endl;
-                player.takeDamage(15);
-                cout << "You take 15 damage for wrong answer";
+                player.takeDamage(damageOnFail);
+                cout << "You take " << damageOnFail << " damage for wrong answer!" << endl;
             }
-        }else {
+        } else {
             player.takeDamage(damageOnFail);
             cout << "You take " << damageOnFail << " damage!" << endl;
         }
@@ -778,7 +791,7 @@ private:
         8, 9,
         "What am I?",
         "map",
-        15, 0
+        15, 15
     ));
 
     // ---- SCENE 8: Ambush Behind the Gate (Combat) ----
@@ -1066,7 +1079,7 @@ public:
         string name;
 
         cout << "\nEnter your name, brave adventurer: ";
-        cin.ignore();
+
         getline(cin, name);
 
         while (name.empty()) {
@@ -1087,22 +1100,17 @@ public:
             bool validInput = false;
 
             while (!validInput) {
+                string line;
+                getline(cin, line);
 
-                if (!(cin >> opt)) {
-                    cout << "Invalid input. Enter C or I: ";
-
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                }
-                else {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-                    opt = toupper(opt);
+                if (line.empty()) {
+                    cout << "Input cannot be empty. Enter C or I: ";
+                } else {
+                    opt = toupper(line[0]);
 
                     if (opt == 'C' || opt == 'I') {
                         validInput = true;
-                    }
-                    else {
+                    } else {
                         cout << "Invalid input. Enter C or I: ";
                     }
                 }
@@ -1152,18 +1160,26 @@ public:
         bool validInput = false;
 
         while (!validInput) {
+            string line;
+            getline(cin, line);
 
-            if (!(cin >> menuChoice)) {
-                cout << "Invalid input. Enter 1 or 2: ";
+            if (line.empty()) {
+                cout << "Input cannot be empty. Enter 1 or 2: ";
+            } else {
+                try {
+                    size_t pos;
+                    menuChoice = stoi(line, &pos);
 
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            }
-            else if (menuChoice < 1 || menuChoice > 2) {
-                cout << "Invalid choice. Enter 1 or 2: ";
-            }
-            else {
-                validInput = true;
+                    if (pos != line.size()) {
+                        cout << "Invalid input. Enter 1 or 2: ";
+                    } else if (menuChoice < 1 || menuChoice > 2) {
+                        cout << "Invalid choice. Enter 1 or 2: ";
+                    } else {
+                        validInput = true;
+                    }
+                } catch (...) {
+                    cout << "Invalid input. Enter 1 or 2: ";
+                }
             }
         }
 
