@@ -2,10 +2,10 @@
 | ------------------ | ---------------------------------- |
 | Group              | A                                  |
 | Module Title       | Software Design and Implementation |
-| Assessment Type    | Coursework Stage 1                 |
+| Assessment Type    | Coursework Stage 3                 |
 | Module Tutor Name  | Mustafa Ghashim                    |
 | Student ID Number  | P485902                            |
-| Date of Submission | 29/01/2025                         |
+| Date of Submission | 15/03/2025                         |
 
 ☒ *I confirm that this assignment is my own work. Where I have referred to academic
 sources, I have provided in-text citations and included the sources in the
@@ -116,6 +116,9 @@ The adventure is built on branching storylines, where each choice has its own we
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <cstdlib>
+#include <ctime>
+#include <limits>
 using namespace std;
 
 enum class ItemType {
@@ -133,12 +136,16 @@ private:
     string name;
     int effect_value;
     string description;
+    int durability;
+    int maxDurability;
 public:
-    Item(string cname, ItemType ctype, int ceffect_value, string cdescription) {
+    Item(string cname, ItemType ctype, int ceffect_value, string cdescription, int cdurability = 0) {
         name = cname;
         type = ctype;
         effect_value = ceffect_value;
         description = cdescription;
+        durability = cdurability;
+        maxDurability = cdurability;
     }
     ItemType getType() const{
         return type;
@@ -152,8 +159,29 @@ public:
     string getDescription() const{
         return description;
     }
+    int getDurability() const {
+        return durability;
+    }
+    int getMaxDurability() const {
+        return maxDurability;
+    }
+    bool isBroken() const {
+        bool broken = false;
+
+        if (type != ItemType::FOOD && durability <= 0) {     //food has no durability
+            broken = true;
+        }
+        return broken;
+    }
+
+    void reduceDurability() {
+        if (durability > 0) {
+            durability--;
+        }
+    }
+
     void printItemInfo() const{
-        cout << "{" << name << "}" << description << endl;
+        cout << "{" << name << "} " << description << endl;
         cout << "Effect: " << effect_value << endl;
     }
 };
@@ -163,28 +191,34 @@ private:
     string name;
     int health;
     int lives;
-    int attack_damage;
+    int baseAttack;
     int defense;
     int score;
     vector<Item> inventory;
+    int equipped_weapon_index = -1;
+    int equipped_armour_index = -1;
 
 public:
     Player(string cname) {
         name = cname;
         health = MAX_HEALTH;
         lives = 3;
-        attack_damage = 15;
+        baseAttack = 10;
         defense = 0;
         score = 0;
+        equipped_weapon_index = -1;
+        equipped_armour_index = -1;
     }
 
     Player() {
         name = "";
         health = MAX_HEALTH;
         lives = 3;
-        attack_damage = 15;
+        baseAttack = 10;
         defense = 0;
         score = 0;
+        equipped_weapon_index = -1;
+        equipped_armour_index = -1;
     }
 
     string getName() {
@@ -196,12 +230,26 @@ public:
     int getLives() {
         return lives;
     }
-    int getAttackDamage() {
-        return attack_damage;
+
+    int getAttackDamage() const {
+        int attack = baseAttack;
+        if (equipped_weapon_index != -1
+            && !inventory[equipped_weapon_index].isBroken()) {
+            attack = baseAttack
+                   + inventory[equipped_weapon_index].getEffectValue();
+            }
+        return attack;
     }
-    int getDefense() {
-        return defense;
+
+    int getDefense() const {
+        int actual_defense = 0;
+        if (equipped_armour_index != -1
+            && !inventory[equipped_armour_index].isBroken()) {
+            actual_defense = inventory[equipped_armour_index].getEffectValue();
+            }
+        return actual_defense;
     }
+
     int getScore() {
         return score;
     }
@@ -214,17 +262,36 @@ public:
     }
 
     void takeDamage(int amount) {
-        int actualDamage = amount - defense;
+        int actualDamage = amount - getDefense();
         if (actualDamage < 0) {
             actualDamage = 0;
         }
         health -= actualDamage;
+
+        if (equipped_armour_index != -1) {
+            inventory[equipped_armour_index].reduceDurability();
+            if (inventory[equipped_armour_index].isBroken()) {
+                cout << "Your " << inventory[equipped_armour_index].getName() << " broke" << endl;
+                equipped_armour_index = -1;
+            }
+        }
+
         if (health <= 0) {
             health = 0;
             lives--;
             if (lives > 0) {
                 health = MAX_HEALTH;
                 cout << "You lost a life! Life remaining: " << lives << endl;
+            }
+        }
+    }
+
+    void reduceWeaponDurability() {
+        if (equipped_weapon_index != -1) {
+            inventory[equipped_weapon_index].reduceDurability();
+            if (inventory[equipped_weapon_index].isBroken()) {
+                cout << "Your " << inventory[equipped_weapon_index].getName() << " broke" << endl;
+                equipped_weapon_index = -1;
             }
         }
     }
@@ -241,15 +308,8 @@ public:
         bool success = false;
         if (inventory.size() < MAX_INVENTORY) {
             inventory.push_back(item);
-            switch (item.getType()) {
-                case ItemType::WEAPON: attack_damage += item.getEffectValue();
-                    break;
-                case ItemType::ARMOUR: defense += item.getEffectValue();
-                    break;
-                case ItemType::FOOD: health += item.getEffectValue();
-                    break;
-            }
             cout << "You picked up: " << item.getName() << endl;
+            cout << "To equip, use or swap the item, open your inventory" << endl;
             success = true;
         }else {
             cout << "Inventory is full." << endl;
@@ -257,22 +317,148 @@ public:
         return success;
     }
 
-    void showInventory() {
-        if (inventory.empty()) {
-            cout << "Your inventory is empty" << endl;
-            return;
+    void equipItem(int index) {
+
+        if (index < 0 || index >= (int)inventory.size()) {
+            cout << "Invalid item index." << endl;
         }
-        cout << "=== Inventory ===" << endl;
-        for (int i = 0; i < inventory.size(); i++) {
-            inventory[i].printItemInfo();
+        else {
+
+            Item& item = inventory[index];
+            ItemType type = item.getType();
+
+            if (type == ItemType::WEAPON) {
+                equipped_weapon_index = index;
+                cout << "Equipped weapon: " << item.getName() << endl;
+            }
+            else if (type == ItemType::ARMOUR) {
+                equipped_armour_index = index;
+                cout << "Equipped armour: " << item.getName() << endl;
+            }
+            else {
+                cout << "This item cannot be equipped." << endl;
+            }
+        }
+    }
+
+    void useFood(int index) {
+        if (index < 0 || index >= (int)inventory.size()) {
+            cout << "Invalid item." << endl;
+        } else if (inventory[index].getType() != ItemType::FOOD) {
+            cout << "You can only use food items." << endl;
+        } else {
+            Item& item = inventory[index];
+            heal(item.getEffectValue());
+            cout << "You used " << item.getName() << ". Health +" << item.getEffectValue() << endl;
+            cout << "Current health: " << health << "/" << MAX_HEALTH << endl;
+            inventory.erase(inventory.begin() + index);
+
+            if (equipped_weapon_index > index) {
+                equipped_weapon_index--;
+            } else if (equipped_weapon_index == index) {
+                equipped_weapon_index = -1;
+            }
+
+            if (equipped_armour_index > index) {
+                equipped_armour_index--;
+            } else if (equipped_armour_index == index) {
+                equipped_armour_index = -1;
+            }
+        }
+    }
+
+    void showInventory() {
+
+        char opt = ' ';
+
+        while (opt != 'B') {
+
+            cout << "\n=== Inventory ===" << endl;
+
+            if (inventory.empty()) {
+                cout << "Your inventory is empty\n";
+            }
+            else {
+                for (int i = 0; i < (int)inventory.size(); i++) {
+                   cout << i + 1 << ") ";
+                    inventory[i].printItemInfo();
+
+                    if (inventory[i].getType() == ItemType::WEAPON || inventory[i].getType() == ItemType::ARMOUR) {
+                        cout << "Durability: " << inventory[i].getDurability() << "/" << inventory[i].getMaxDurability() << "\n";
+            }
+                }
+            }
+
+            cout << "\n=== Equipped ===" << endl;
+
+            if (equipped_weapon_index != -1) {
+                Item& w = inventory[equipped_weapon_index];
+                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << endl;
+            }
+            else {
+                cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
+            }
+
+            if (equipped_armour_index != -1) {
+                Item& a = inventory[equipped_armour_index];
+                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << endl;
+            }
+            else {
+                cout << "Armour: none" << endl;
+            }
+
+            cout << "\nE) Equip item   U) Use food   B) Back" << endl;
+            cout << "Choice: ";
+
+            if (!(cin >> opt)) {
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                cout << "Invalid input." << endl;
+                continue;
+            }
+
+            opt = toupper(opt);
+
+            if (opt == 'E' || opt == 'U') {
+
+                int num;
+                bool valid = false;
+
+                while (!valid) {
+
+                    cout << "Enter item number: ";
+
+                    if (!(cin >> num)) {
+
+                        cout << "Invalid input. Enter a number.\n";
+
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    }
+                    else if (num <= 0) {
+                        cout << "Number must be greater than 0.\n";
+                    }
+                    else {
+                        valid = true;
+                    }
+                }
+
+                if (opt == 'E') equipItem(num - 1);
+                else useFood(num - 1);
+            }
+            else if (opt != 'B') {
+                cout << "Invalid choice. Enter E, U or B." << endl;
+            }
         }
     }
 
     void showPlayerStats() const {
         cout << "===" << name << "'s Stats ===" << endl;
-        cout << "Health: " << health << endl;
-        cout << "Attack damage: " << attack_damage << endl;
-        cout << "Defense: " << defense << endl;
+        cout << "Health: " << health << "/" << MAX_HEALTH << endl;
+        cout << "Damage: " << getAttackDamage() << endl;
+        cout << "Defense: " << getDefense() << endl;
         cout << "Lives: " << lives << endl;
         cout << "Score: " << score << endl;
     }
@@ -488,7 +674,6 @@ public:
         }else{
             player.addItem(itemB);
         }
-
         return next;
     }
 };
@@ -504,12 +689,16 @@ private:
         cout << "| DEF: " << enemy.getDefense() << endl;
 
         Enemy currentEnemy = enemy;
+
+        this_thread::sleep_for(chrono::milliseconds(1500));
+
         while (currentEnemy.isAlive() && player.isAlive()) {
             int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
             if (playerDamage < 0) {
                 playerDamage = 0;
             }
             currentEnemy.takeDamage(playerDamage);
+            player.reduceWeaponDurability();
             cout << "\nYou attack " << currentEnemy.getName() << " for " << playerDamage << " damage!" <<
                 " (Enemy HP: " << currentEnemy.getHealth() << ")" << endl;
 
@@ -517,7 +706,7 @@ private:
                 break;
             }
 
-            this_thread::sleep_for(chrono::milliseconds(800)); // pause for better effect of fight
+            this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
 
             int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
             if (enemyDamage < 0) {
@@ -527,7 +716,7 @@ private:
             cout << currentEnemy.getName() << " attacks you for " << enemyDamage << " damage!" <<
                 " (Your HP: " << player.getHealth() << ")" << endl;
 
-            this_thread::sleep_for(chrono::milliseconds(800));
+            this_thread::sleep_for(chrono::milliseconds(1000));
         }
         if (currentEnemy.isAlive()) {
             cout << "\nYou were defeated by " << enemy.getName() << "..." << endl;
@@ -560,7 +749,7 @@ public:
             int roll = rand() % 10;
             if (roll < 3) {
                 cout << "\nYou managed to escape, but not without a hit..." << endl;
-                player.takeDamage(10);
+                player.takeDamage(15);
                 cout << "You take 15 damage while running" << endl;
             }else {
                 cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
@@ -597,8 +786,8 @@ private:
         "You take the sword. It is heavy but sharp.",
         "You take the bread and eat it. You feel stronger.",
         1, 1,
-        Item("Old Sword", ItemType::WEAPON, 5,  "A heavy sword. Attack +5"),
-        Item("Bread",     ItemType::FOOD,   20, "Restores health. Health +20")
+        Item("Old Sword", ItemType::WEAPON, 5,  "A heavy sword. Attack +5", 10),
+        Item("Bread",     ItemType::FOOD,   20, "Restores health. Health +20", 0)
     ));
 
     // ---- SCENE 1: The Dark Hall (Lore) ----
@@ -650,7 +839,7 @@ private:
         "You try to escape...",
         6, 6,
         Enemy("Skeleton Warrior", 35, 12, 2, 15,
-            Item("Bone Sword", ItemType::WEAPON, 3, "A cracked blade. Attack +3"))
+            Item("Bone Sword", ItemType::WEAPON, 3, "A cracked blade. Attack +3", 6))
     ));
 
     // ---- SCENE 4: Quiet Corridor (Item) ----
@@ -666,8 +855,8 @@ private:
         "You pick up the shield. It is light but solid.",
         "You put on the vest. It fits well.",
         6, 6,
-        Item("Torch Shield", ItemType::ARMOUR, 4, "Light protection. Defense +4"),
-        Item("Leather Vest", ItemType::ARMOUR, 6, "Decent armour. Defense +6")
+        Item("Torch Shield", ItemType::ARMOUR, 4, "Light protection. Defense +4", 8),
+        Item("Leather Vest", ItemType::ARMOUR, 6, "Decent armour. Defense +6", 10)
     ));
 
     // ---- SCENE 6: Old Storage Room (Item) ----
@@ -682,8 +871,8 @@ private:
         "You grab a solid iron sword.",
         "You break the lock. Inside is a health potion.",
         7, 7,
-        Item("Iron Sword",    ItemType::WEAPON, 6, "A solid blade. Attack +6"),
-        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30")
+        Item("Iron Sword",    ItemType::WEAPON, 6, "A solid blade. Attack +6", 10),
+        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30", 0)
     ));
 
     // ---- SCENE 7: Map Riddle Gate (Puzzle) ----
@@ -721,22 +910,22 @@ private:
         Enemy("Goblin Ambushers", 45, 14, 3, 20)
     ));
 
-    // ---- SCENE 9: Ghost of the Old Soldier (Lore) ----
+    // ---- SCENE 9: Ghost of the Old Soldier (Item) ----
     // Crawling through the wall you find a hidden chamber with a ghost
     // Both -> Scene 23
-    scenes.push_back(new Scene(
+        scenes.push_back(new ItemScene(
         9,
         "You crawl through the wall into a hidden chamber.\n"
         "A faint blue glow fills the room.\n"
         "The ghost of an old soldier stands before you.\n"
         "He says: I died here a hundred years ago. Take my sword.\n"
-        "It will serve you better than it served me.\n"
         "A glowing sword appears on the floor before you.",
-        "Take the ghost sword",
-        "Leave it and move on",
-        "You pick up the sword. It hums with energy. Attack +8",
+        "Take the ghost sword", "Leave it and move on",
+        "You pick up the sword. It hums with energy.",
         "You leave it. The ghost fades silently.",
-        23, 23
+        23, 23,
+        Item("Ghost Sword", ItemType::WEAPON, 8, "Hums with energy. Attack +8", 12),
+        Item("",            ItemType::FOOD,   0, "", 0)
     ));
 
     // ---- SCENE 23: Goblin Patrol (Combat) ----
@@ -753,7 +942,7 @@ private:
         "You turn and run...",
         14, 14,
         Enemy("Goblin Patrol", 50, 13, 2, 20,
-            Item("Goblin Spear", ItemType::WEAPON, 4, "A crude spear. Attack +4"))
+            Item("Goblin Spear", ItemType::WEAPON, 4, "A crude spear. Attack +4", 7))
     ));
 
     // ---- SCENE 14: Skeleton Captain (Combat) ----
@@ -769,7 +958,7 @@ private:
         "You circle him slowly, looking for an opening...",
         99, 99,
         Enemy("Skeleton Captain", 70, 18, 8, 50,
-            Item("Captain's Axe", ItemType::WEAPON, 10, "A heavy battle axe. Attack +10"))
+            Item("Captain's Axe", ItemType::WEAPON, 10, "A heavy battle axe. Attack +10", 12))
     ));
 
     // ==================== WEST WING ====================
@@ -819,8 +1008,8 @@ private:
         "You pick up the axe. It is crude but effective.",
         "You put on the goblin armour. Smells bad but works.",
         13, 13,
-        Item("Goblin Axe",   ItemType::WEAPON, 7, "Crude but sharp. Attack +7"),
-        Item("Goblin Armour",ItemType::ARMOUR, 5, "Smells terrible. Defense +5")
+        Item("Goblin Axe",   ItemType::WEAPON, 7, "Crude but sharp. Attack +7", 8),
+        Item("Goblin Armour",ItemType::ARMOUR, 5, "Smells terrible. Defense +5", 7)
     ));
 
     // ---- SCENE 13: 6x7 Door Puzzle (Puzzle) ----
@@ -872,8 +1061,8 @@ private:
         "You put on the gauntlets. Your fists feel stronger.",
         "You lift the war hammer. It is heavy but powerful.",
         24, 24,
-        Item("Steel Gauntlets", ItemType::ARMOUR, 7, "Heavy hand armour. Defense +7"),
-        Item("War Hammer",      ItemType::WEAPON, 8, "Slow but devastating. Attack +8")
+        Item("Steel Gauntlets", ItemType::ARMOUR, 7, "Heavy hand armour. Defense +7", 10),
+        Item("War Hammer",      ItemType::WEAPON, 8, "Slow but devastating. Attack +8", 10)
     ));
 
     // ---- SCENE 24: Skeleton Archer (Combat) ----
@@ -890,7 +1079,7 @@ private:
         "You weave between arrows and rush it...",
         18, 18,
         Enemy("Skeleton Archer", 40, 15, 1, 20,
-            Item("Elven Bow", ItemType::WEAPON, 5, "A fine bow. Attack +5"))
+            Item("Elven Bow", ItemType::WEAPON, 5, "A fine bow. Attack +5", 10))
     ));
 
     // ---- SCENE 18: Clock Riddle (Puzzle) ----
@@ -925,7 +1114,7 @@ private:
         "You roll to the side...",
         22, 22,
         Enemy("Goblin Shaman", 45, 17, 2, 25,
-            Item("Shaman Staff", ItemType::WEAPON, 6, "Crackles with energy. Attack +6"))
+            Item("Shaman Staff", ItemType::WEAPON, 6, "Crackles with energy. Attack +6", 9))
     ));
 
     // ---- SCENE 20: Long Way Around (Item) ----
@@ -942,8 +1131,8 @@ private:
         "You put on the chainmail. Solid protection.",
         "You pick up the axe. Well balanced.",
         22, 22,
-        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8"),
-        Item("Battle Axe",     ItemType::WEAPON, 7, "Well balanced axe. Attack +7")
+        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8", 12),
+        Item("Battle Axe",     ItemType::WEAPON, 7, "Well balanced axe. Attack +7", 10)
     ));
 
     // ---- SCENE 22: Dark Wizard (Combat) ----
@@ -960,7 +1149,7 @@ private:
         "You sprint for the crown...",
         99, 99,
         Enemy("Dark Wizard", 80, 20, 5, 60,
-            Item("Wizard's Staff", ItemType::WEAPON, 12, "Ancient and powerful. Attack +12"))
+            Item("Wizard's Staff", ItemType::WEAPON, 12, "Ancient and powerful. Attack +12", 15))
         ));
     }
 
@@ -986,42 +1175,50 @@ public:
         }
     }
 
-    void run() {
-        showMainMenu();
-        int menuChoice;
-        cin >> menuChoice;
-        while (menuChoice < 1 || menuChoice > 2) {
-            cout << "Invalid choice. Enter 1 or 2: ";
-            cin >> menuChoice;
-        }
-
-        if (menuChoice == 2) {
-            cout << "\nGoodbye!" << endl;
-            return;
-        }
-
+    void setupPlayer() {
         string name;
+
         cout << "\nEnter your name, brave adventurer: ";
         cin.ignore();
         getline(cin, name);
+
         while (name.empty()) {
             cout << "Name cannot be empty. Try again: ";
             getline(cin, name);
         }
+
         player = Player(name);
         currentSceneID = 0;
-        cout << "\nWelcome, " << name << "! Your quest begins..." << endl;
 
+        cout << "\nWelcome, " << name << "! Your quest begins..." << endl;
+    }
+
+    void gameLoop() {
         while (player.isAlive()) {
             cout << "\n[C] Continue   [I] Inventory & Stats: ";
             char opt;
-            cin >> opt;
-            opt = toupper(opt);
+            bool validInput = false;
 
-            while (opt != 'C' && opt != 'I') {
-                cout << "Invalid input. Enter C or I: ";
-                cin >> opt;
-                opt = toupper(opt);
+            while (!validInput) {
+
+                if (!(cin >> opt)) {
+                    cout << "Invalid input. Enter C or I: ";
+
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+                else {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    opt = toupper(opt);
+
+                    if (opt == 'C' || opt == 'I') {
+                        validInput = true;
+                    }
+                    else {
+                        cout << "Invalid input. Enter C or I: ";
+                    }
+                }
             }
 
             if (opt == 'I') {
@@ -1031,6 +1228,7 @@ public:
             }
 
             Scene* current = nullptr;
+
             for (int i = 0; i < scenes.size(); i++) {
                 if (scenes[i]->getSceneId() == currentSceneID) {
                     current = scenes[i];
@@ -1044,6 +1242,7 @@ public:
             }
 
             int next = current->play(player);
+
             if (!player.isAlive()) {
                 break;
             }
@@ -1058,11 +1257,86 @@ public:
             cout << "Final Score: " << player.getScore() << endl;
         }
     }
+
+    void run() {
+        showMainMenu();
+
+        int menuChoice;
+        bool validInput = false;
+
+        while (!validInput) {
+
+            if (!(cin >> menuChoice)) {
+                cout << "Invalid input. Enter 1 or 2: ";
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else if (menuChoice < 1 || menuChoice > 2) {
+                cout << "Invalid choice. Enter 1 or 2: ";
+            }
+            else {
+                validInput = true;
+            }
+        }
+
+        if (menuChoice == 2) {
+            cout << "\nGoodbye!" << endl;
+        }
+        else {
+            setupPlayer();
+            gameLoop();
+        }
+    }
 };
 
 int main() {
+    srand(time(0));
     GameManager game;
     game.run();
     return 0;
-}
+} 
 ```
+
+### Testing
+
+<style>
+</style>
+
+| **Test No.** | **Item to test**       | **Test Description (with example data)**                                     | **Expected Result**                       | **Actual Result**                         | **Comments / Actions** |
+| ------------ | ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------- | ---------------------- |
+| 1            | Main menu              | Valid - Enter 1                                                              | Game starts, asks for  player name        | Game starts, asks for player name         | Test passed            |
+| 2            | Main menu              | Invalid - Enter abc                                                          | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 3            | Main menu              | Extreme valid - Enter 2                                                      | Prints "Goodbye!" and exits               | Prints "Goodbye!" and exits               | Test passed            |
+| 4            | Main menu              | Extreme invalid - Enter 999                                                  | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 5            | Main menu              | Error - Press Enter with no  input                                           | Prints error, asks again                  | Prints error, asks again                  | Test  passed           |
+| 6            | Player name            | Valid - Enter Vlad                                                           | Prints "Welcome, Vlad!"                   | Prints "Welcome, Vlad!"                   | Test passed            |
+| 7            | Player name            | Invalid - Enter only spaces                                                  | Prints error, asks again                  | Accept name                               | Test failed            |
+| 8            | Player name            | Extreme valid - Enter very long name Aaaaaaaaaaaaaaaaaaaaaa                  | Name accepted and used in dialogue        | Name accepted and used in dialogue        | Test passed            |
+| 9            | Player name            | Extreme invalid - Enter special characters @#$%                              | Accepted as name                          | Accepted as name                          | Test passed            |
+| 10           | Player name            | Error - Press Enter with no input                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 11           | Game loop (C/I)        | Valid - Enter C                                                              | Moves to next scene                       | Moves to next scene                       | Test passed            |
+| 12           | Game loop (C/I)        | Invalid - Enter X                                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 13           | Game loop (C/I)        | Extreme valid - Enter lowercase i                                            | Accepted, opens inventory                 | Accepted, opens inventory                 | Test passed            |
+| 14           | Game loop (C/I)        | Extreme invalid - Enter 999                                                  | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 15           | Game loop (C/I)        | Error - Press Enter with no input                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 16           | Scene choice (A/B)     | Valid - Enter A                                                              | Prints consequence A, correct scene loads | Prints consequence A, correct scene loads | Test passed            |
+| 17           | Scene choice (A/B)     | Invalid - Enter Z                                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 18           | Scene choice (A/B)     | Extreme valid - Enter lowercase b                                            | Accepted, same as B                       | Accepted, same as B                       | Test passed            |
+| 19           | Scene choice (A/B)     | Extreme invalid - Enter 999                                                  | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 20           | Scene choice (A/B)     | Error - Press Enter with no input                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 21           | Puzzle answer          | Valid - Enter 6 (sheep puzzle)                                               | Prints "Correct!", score +10              | Prints "Correct!", score +10              | Test passed            |
+| 22           | Puzzle answer          | Invalid - Enter abc                                                          | Prints "Wrong!", player takes 15 damage   | Prints "Wrong!", player takes 15 damage   | Test passed            |
+| 23           | Puzzle answer          | Extreme valid - Enter MAP uppercase (riddle)                                 | Accepted as correct                       | Accepted as correct                       | Test passed            |
+| 24           | Puzzle answer          | Extreme invalid - Enter 99999                                                | Prints "Wrong!", player takes damage      | Prints "Wrong!", player takes damage      | Test passed            |
+| 25           | Puzzle answer          | Error - Press Enter with no input                                            | Prints "Wrong!", player takes damage      | Prints "Wrong!", player takes damage      | Test passed            |
+| 26           | Inventory menu (E/U/B) | Valid - Enter E                                                              | Asks for item number                      | Asks for item number                      | Test passed            |
+| 27           | Inventory menu (E/U/B) | Invalid - Enter X                                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 28           | Inventory menu (E/U/B) | Extreme valid - Enter lowercase b                                            | Accepted, returns to game loop            | Accepted, returns to game loop            | Test passed            |
+| 29           | Inventory menu (E/U/B) | Extreme invalid - Enter 999                                                  | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 30           | Inventory menu (E/U/B) | Error - Press Enter with no input                                            | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 31           | Inventory item number  | Valid - Enter 1 (with items in inventory)                                    | Equips/uses item 1                        | Equips/uses item 1                        | Test passed            |
+| 32           | Inventory item number  | Invalid - Enter abc                                                          | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+| 33           | Inventory item number  | Extreme valid - Enter last valid index, for example 3 (3 items in inventory) | Equips/uses item 3                        | Equips/uses item 3                        | Test passed            |
+| 34           | Inventory item number  | Extreme invalid - Enter 99                                                   | Prints "Invalid item index"               | Prints "Invalid item index"               | Test passed            |
+| 35           | Inventory item number  | Error - Enter 0                                                              | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
