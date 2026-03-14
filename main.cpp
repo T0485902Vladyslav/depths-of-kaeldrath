@@ -53,7 +53,12 @@ public:
         return maxDurability;
     }
     bool isBroken() const {
-        return durability <= 0;
+        bool broken = false;
+
+        if (type != ItemType::FOOD && durability <= 0) {     //food has no durability
+            broken = true;
+        }
+        return broken;
     }
 
     void reduceDurability() {
@@ -63,7 +68,7 @@ public:
     }
 
     void printItemInfo() const{
-        cout << "{" << name << "}" << description << endl;
+        cout << "{" << name << "} " << description << endl;
         cout << "Effect: " << effect_value << endl;
     }
 };
@@ -77,8 +82,8 @@ private:
     int defense;
     int score;
     vector<Item> inventory;
-    Item* equippedWeapon;
-    Item* equippedArmour;
+    int equipped_weapon_index = -1;
+    int equipped_armour_index = -1;
 
 public:
     Player(string cname) {
@@ -88,8 +93,8 @@ public:
         baseAttack = 10;
         defense = 0;
         score = 0;
-        equippedWeapon = nullptr;
-        equippedArmour = nullptr;
+        equipped_weapon_index = -1;
+        equipped_armour_index = -1;
     }
 
     Player() {
@@ -99,8 +104,8 @@ public:
         baseAttack = 10;
         defense = 0;
         score = 0;
-        equippedWeapon = nullptr;
-        equippedArmour = nullptr;
+        equipped_weapon_index = -1;
+        equipped_armour_index = -1;
     }
 
     string getName() {
@@ -112,20 +117,26 @@ public:
     int getLives() {
         return lives;
     }
-    int getAttackDamage() const{
+
+    int getAttackDamage() const {
         int attack = baseAttack;
-        if (equippedWeapon != nullptr && !equippedWeapon -> isBroken()) {
-            attack = baseAttack + equippedWeapon -> getEffectValue();
-        }
+        if (equipped_weapon_index != -1
+            && !inventory[equipped_weapon_index].isBroken()) {
+            attack = baseAttack
+                   + inventory[equipped_weapon_index].getEffectValue();
+            }
         return attack;
     }
-    int getDefense() const{
-        int actualDefense = 0;
-        if (equippedArmour != nullptr && !equippedArmour -> isBroken()) {
-            actualDefense = equippedArmour -> getEffectValue();
-        }
-        return actualDefense;
+
+    int getDefense() const {
+        int actual_defense = 0;
+        if (equipped_armour_index != -1
+            && !inventory[equipped_armour_index].isBroken()) {
+            actual_defense = inventory[equipped_armour_index].getEffectValue();
+            }
+        return actual_defense;
     }
+
     int getScore() {
         return score;
     }
@@ -138,18 +149,20 @@ public:
     }
 
     void takeDamage(int amount) {
-        int actualDamage = amount - defense;
+        int actualDamage = amount - getDefense();
         if (actualDamage < 0) {
             actualDamage = 0;
         }
         health -= actualDamage;
-        if (equippedArmour != nullptr) {
-            equippedArmour -> reduceDurability();
-            if (equippedArmour -> isBroken()) {
-                cout << "Your " << equippedArmour -> getName() << " broke" << endl;
-                equippedArmour = nullptr;
+
+        if (equipped_armour_index != -1) {
+            inventory[equipped_armour_index].reduceDurability();
+            if (inventory[equipped_armour_index].isBroken()) {
+                cout << "Your " << inventory[equipped_armour_index].getName() << " broke" << endl;
+                equipped_armour_index = -1;
             }
         }
+
         if (health <= 0) {
             health = 0;
             lives--;
@@ -161,11 +174,11 @@ public:
     }
 
     void reduceWeaponDurability() {
-        if (equippedWeapon !=nullptr) {
-            equippedWeapon -> reduceDurability();
-            if (equippedWeapon -> isBroken()) {
-                cout << "Your " << equippedWeapon -> getName() << " broke" << endl;
-                equippedWeapon = nullptr;
+        if (equipped_weapon_index != -1) {
+            inventory[equipped_weapon_index].reduceDurability();
+            if (inventory[equipped_weapon_index].isBroken()) {
+                cout << "Your " << inventory[equipped_weapon_index].getName() << " broke" << endl;
+                equipped_weapon_index = -1;
             }
         }
     }
@@ -183,6 +196,7 @@ public:
         if (inventory.size() < MAX_INVENTORY) {
             inventory.push_back(item);
             cout << "You picked up: " << item.getName() << endl;
+            cout << "To equip, use or swap the item, open your inventory" << endl;
             success = true;
         }else {
             cout << "Inventory is full." << endl;
@@ -191,24 +205,31 @@ public:
     }
 
     void equipItem(int index) {
-        if (index >= 0 && index < (int)inventory.size()) {
+
+        if (index < 0 || index >= (int)inventory.size()) {
+            cout << "Invalid item index." << endl;
+        }
+        else {
+
             Item& item = inventory[index];
-            if (item.getType() == ItemType::WEAPON) {
-                equippedWeapon = &item;
-                cout << "Equipped: " << item.getName() << endl;
-            } else if (item.getType() == ItemType::ARMOUR) {
-                equippedArmour = &item;
-                cout << "Equipped: " << item.getName() << endl;
-            } else {
-                cout << "You cannot equip food" << endl;
+            ItemType type = item.getType();
+
+            if (type == ItemType::WEAPON) {
+                equipped_weapon_index = index;
+                cout << "Equipped weapon: " << item.getName() << endl;
             }
-        } else {
-            cout << "Invalid item" << endl;
+            else if (type == ItemType::ARMOUR) {
+                equipped_armour_index = index;
+                cout << "Equipped armour: " << item.getName() << endl;
+            }
+            else {
+                cout << "This item cannot be equipped." << endl;
+            }
         }
     }
 
     void useFood(int index) {
-        if (index < 0 || index >= inventory.size()) {
+        if (index < 0 || index >= (int)inventory.size()) {
             cout << "Invalid item." << endl;
         } else if (inventory[index].getType() != ItemType::FOOD) {
             cout << "You can only use food items." << endl;
@@ -218,54 +239,87 @@ public:
             cout << "You used " << item.getName() << ". Health +" << item.getEffectValue() << endl;
             cout << "Current health: " << health << "/" << MAX_HEALTH << endl;
             inventory.erase(inventory.begin() + index);
+
+            if (equipped_weapon_index > index) {
+                equipped_weapon_index--;
+            } else if (equipped_weapon_index == index) {
+                equipped_weapon_index = -1;
+            }
+
+            if (equipped_armour_index > index) {
+                equipped_armour_index--;
+            } else if (equipped_armour_index == index) {
+                equipped_armour_index = -1;
+            }
         }
     }
 
     void showInventory() {
-        if (inventory.empty()) {
-            cout << "Your inventory is empty" << endl;
-        }else {
+
+        char opt = ' ';
+
+        while (opt != 'B') {
+
             cout << "\n=== Inventory ===" << endl;
-            for (int i = 0; i < inventory.size(); i++) {
-                cout << i + 1 << ") ";
-                inventory[i].printItemInfo();
+
+            if (inventory.empty()) {
+                cout << "Your inventory is empty\n";
             }
-        }
-        cout << "\n=== Equipped ===" << endl;
-        if (equippedWeapon != nullptr) {
-            cout << "WEAPON: " << equippedWeapon -> getName() << endl;
-            cout << "Durability: " << equippedWeapon ->getDurability() << "/" << equippedWeapon -> getMaxDurability() << endl;
-        }else {
-            cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
-        }
-        if (equippedArmour != nullptr) {
-            cout << "ARMOUR: " << equippedArmour -> getName() << endl;
-            cout << "Durability: " << equippedArmour -> getDurability() << "/" << equippedArmour -> getMaxDurability() << endl;
-        }else {
-            cout << "Armour: none";
-        }
+            else {
+                for (int i = 0; i < (int)inventory.size(); i++) {
+                   cout << i + 1 << ") ";
+                    inventory[i].printItemInfo();
 
-        cout << "\nE) Equip item   U) Use food   Back) any other key" << endl;
+                    if (inventory[i].getType() == ItemType::WEAPON || inventory[i].getType() == ItemType::ARMOUR) {
+                        cout << "Durability: " << inventory[i].getDurability() << "/" << inventory[i].getMaxDurability() << "\n";
+            }
+                }
+            }
 
-        char opt;
+            cout << "\n=== Equipped ===" << endl;
 
-        if (!(cin >> opt)) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input" << endl;
-        }
-        else {
+            if (equipped_weapon_index != -1) {
+                Item& w = inventory[equipped_weapon_index];
+                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << endl;
+            }
+            else {
+                cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
+            }
+
+            if (equipped_armour_index != -1) {
+                Item& a = inventory[equipped_armour_index];
+                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << endl;
+            }
+            else {
+                cout << "Armour: none" << endl;
+            }
+
+            cout << "\nE) Equip item   U) Use food   B) Back" << endl;
+            cout << "Choice: ";
+
+            if (!(cin >> opt)) {
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                cout << "Invalid input." << endl;
+                continue;
+            }
+
             opt = toupper(opt);
 
             if (opt == 'E' || opt == 'U') {
-                int num;
-                bool validInput = false;
 
-                while (!validInput) {
+                int num;
+                bool valid = false;
+
+                while (!valid) {
+
                     cout << "Enter item number: ";
 
                     if (!(cin >> num)) {
-                        cout << "Invalid input. Please enter a number.\n";
+
+                        cout << "Invalid input. Enter a number.\n";
 
                         cin.clear();
                         cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -274,16 +328,15 @@ public:
                         cout << "Number must be greater than 0.\n";
                     }
                     else {
-                        validInput = true;
+                        valid = true;
                     }
                 }
 
-                if (opt == 'E') {
-                    equipItem(num - 1);
-                }
-                else {
-                    useFood(num - 1);
-                }
+                if (opt == 'E') equipItem(num - 1);
+                else useFood(num - 1);
+            }
+            else if (opt != 'B') {
+                cout << "Invalid choice. Enter E, U or B." << endl;
             }
         }
     }
@@ -583,7 +636,7 @@ public:
             int roll = rand() % 10;
             if (roll < 3) {
                 cout << "\nYou managed to escape, but not without a hit..." << endl;
-                player.takeDamage(10);
+                player.takeDamage(15);
                 cout << "You take 15 damage while running" << endl;
             }else {
                 cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
@@ -1029,17 +1082,30 @@ public:
 
     void gameLoop() {
         while (player.isAlive()) {
-
             cout << "\n[C] Continue   [I] Inventory & Stats: ";
-
             char opt;
-            cin >> opt;
-            opt = toupper(opt);
+            bool validInput = false;
 
-            while (opt != 'C' && opt != 'I') {
-                cout << "Invalid input. Enter C or I: ";
-                cin >> opt;
-                opt = toupper(opt);
+            while (!validInput) {
+
+                if (!(cin >> opt)) {
+                    cout << "Invalid input. Enter C or I: ";
+
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+                else {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                    opt = toupper(opt);
+
+                    if (opt == 'C' || opt == 'I') {
+                        validInput = true;
+                    }
+                    else {
+                        cout << "Invalid input. Enter C or I: ";
+                    }
+                }
             }
 
             if (opt == 'I') {
@@ -1082,21 +1148,32 @@ public:
     void run() {
         showMainMenu();
 
-        int menu_choice;
-        cin >> menu_choice;
+        int menuChoice;
+        bool validInput = false;
 
-        while (menu_choice < 1 || menu_choice > 2) {
-            cout << "Invalid choice. Enter 1 or 2: ";
-            cin >> menu_choice;
+        while (!validInput) {
+
+            if (!(cin >> menuChoice)) {
+                cout << "Invalid input. Enter 1 or 2: ";
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            else if (menuChoice < 1 || menuChoice > 2) {
+                cout << "Invalid choice. Enter 1 or 2: ";
+            }
+            else {
+                validInput = true;
+            }
         }
 
-        if (menu_choice == 2) {
+        if (menuChoice == 2) {
             cout << "\nGoodbye!" << endl;
-            return;
         }
-
-        setupPlayer();
-        gameLoop();
+        else {
+            setupPlayer();
+            gameLoop();
+        }
     }
 };
 
