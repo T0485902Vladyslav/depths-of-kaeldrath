@@ -207,7 +207,7 @@ public:
     void equipItem(int index) {
 
         if (index < 0 || index >= (int)inventory.size()) {
-            cout << "Invalid item index." << endl;
+            cout << "\nInvalid item index." << endl;
         }
         else {
 
@@ -216,14 +216,14 @@ public:
 
             if (type == ItemType::WEAPON) {
                 equipped_weapon_index = index;
-                cout << "Equipped weapon: " << item.getName() << endl;
+                cout << "\nEquipped weapon: " << item.getName() << endl;
             }
             else if (type == ItemType::ARMOUR) {
                 equipped_armour_index = index;
-                cout << "Equipped armour: " << item.getName() << endl;
+                cout << "\nEquipped armour: " << item.getName() << endl;
             }
             else {
-                cout << "This item cannot be equipped." << endl;
+                cout << "\nThis item cannot be equipped." << endl;
             }
         }
     }
@@ -280,7 +280,7 @@ public:
 
             if (equipped_weapon_index != -1) {
                 Item& w = inventory[equipped_weapon_index];
-                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << endl;
+                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << ")" << endl;
             }
             else {
                 cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
@@ -288,7 +288,7 @@ public:
 
             if (equipped_armour_index != -1) {
                 Item& a = inventory[equipped_armour_index];
-                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << endl;
+                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << ")" << endl;
             }
             else {
                 cout << "Armour: none" << endl;
@@ -428,6 +428,7 @@ protected:
     string consequenceB;
     int nextSceneIdA;
     int nextSceneIdB;
+    char lastChoice = ' ';
 public:
     Scene(int cscene_id, string ccene_description, string cchoiceA,
         string cchoiceB, string cconsequenceA, string cconsequenceB, int cnextIdA, int cnextIdB) {
@@ -479,13 +480,18 @@ public:
             }
         }
 
+        lastChoice = userChoice;
+
+        int result;
         if (userChoice == 'A') {
             cout << "\n>> " << consequenceA << endl;
-            return nextSceneIdA;
+            result = nextSceneIdA;
         } else {
             cout << "\n>> " << consequenceB << endl;
-            return nextSceneIdB;
+            result = nextSceneIdB;
         }
+
+        return result;
     }
 };
 
@@ -520,10 +526,20 @@ public:
         if (next == nextSceneIdA) {
             cout << "\n" << question << endl;
             cout << "\n" << player.getName() << ", you must answer to proceed." << endl;
-            cout << "Your answer: ";
 
             string userAnswer;
-            getline(cin, userAnswer);
+            bool validInput = false;
+
+            while (!validInput) {
+                cout << "Your answer: ";
+                getline(cin, userAnswer);
+
+                if (userAnswer.empty()) {
+                    cout << "Answer cannot be empty. Try again.\n";
+                } else {
+                    validInput = true;
+                }
+            }
 
             for (int i = 0; i < (int)answer.size(); i++) {
                 answer[i] = tolower(answer[i]);
@@ -569,11 +585,13 @@ public:
     int play(Player& player) override {
         cout << "\n" << description << endl;
         int next = presentChoices(player);
-        if (next == nextSceneIdA) {
+
+        if (lastChoice == 'A') {
             player.addItem(itemA);
-        }else{
+        } else {
             player.addItem(itemB);
         }
+
         return next;
     }
 };
@@ -583,7 +601,7 @@ private:
     Enemy enemy;
 
     void runCombat(Player& player) {
-        cout << "\n-----Your enemy" << enemy.getName() << "'s stats-----"<< endl;
+        cout << "\n-----Your enemy " << enemy.getName() << "'s stats-----"<< endl;
         cout << "| HP:  " << enemy.getHealth() << endl;
         cout << "| ATK: " << enemy.getAttack() << endl;
         cout << "| DEF: " << enemy.getDefense() << endl;
@@ -645,13 +663,16 @@ public:
     int play(Player& player) override {
         cout << "\n" << description << endl;
         int next = presentChoices(player);
-        if (next == nextSceneIdB) {
+
+        if (lastChoice == 'A') {
+            runCombat(player);
+        } else {
             int roll = rand() % 10;
             if (roll < 3) {
                 cout << "\nYou managed to escape, but not without a hit..." << endl;
                 player.takeDamage(15);
                 cout << "You take 15 damage while running" << endl;
-            }else {
+            } else {
                 cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
                 int enemyDamage = enemy.getAttack() + (rand() % 5) - 2;
                 player.takeDamage(enemyDamage);
@@ -659,9 +680,8 @@ public:
                 cout << "You are forced to fight!" << endl;
                 runCombat(player);
             }
-        }else {
-            runCombat(player);
         }
+
         return next;
     }
 };
