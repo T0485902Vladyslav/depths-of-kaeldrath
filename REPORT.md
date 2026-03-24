@@ -320,7 +320,7 @@ public:
     void equipItem(int index) {
 
         if (index < 0 || index >= (int)inventory.size()) {
-            cout << "Invalid item index." << endl;
+            cout << "\nInvalid item index." << endl;
         }
         else {
 
@@ -329,14 +329,14 @@ public:
 
             if (type == ItemType::WEAPON) {
                 equipped_weapon_index = index;
-                cout << "Equipped weapon: " << item.getName() << endl;
+                cout << "\nEquipped weapon: " << item.getName() << endl;
             }
             else if (type == ItemType::ARMOUR) {
                 equipped_armour_index = index;
-                cout << "Equipped armour: " << item.getName() << endl;
+                cout << "\nEquipped armour: " << item.getName() << endl;
             }
             else {
-                cout << "This item cannot be equipped." << endl;
+                cout << "\nThis item cannot be equipped." << endl;
             }
         }
     }
@@ -393,7 +393,7 @@ public:
 
             if (equipped_weapon_index != -1) {
                 Item& w = inventory[equipped_weapon_index];
-                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << endl;
+                cout << "Weapon: " << w.getName() << " (Durability: " << w.getDurability() << "/" << w.getMaxDurability() << ")" << endl;
             }
             else {
                 cout << "Weapon: none (base attack: " << baseAttack << ")" << endl;
@@ -401,7 +401,7 @@ public:
 
             if (equipped_armour_index != -1) {
                 Item& a = inventory[equipped_armour_index];
-                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << endl;
+                cout << "Armour: " << a.getName() << " (Durability: " << a.getDurability() << "/" << a.getMaxDurability() << ")" << endl;
             }
             else {
                 cout << "Armour: none" << endl;
@@ -541,6 +541,7 @@ protected:
     string consequenceB;
     int nextSceneIdA;
     int nextSceneIdB;
+    char lastChoice = ' ';
 public:
     Scene(int cscene_id, string ccene_description, string cchoiceA,
         string cchoiceB, string cconsequenceA, string cconsequenceB, int cnextIdA, int cnextIdB) {
@@ -570,23 +571,40 @@ public:
         cout << "B) " << choiceB << endl;
         cout << "----------------------------------------------" << endl;
 
-        char userChoice;
-        do {
+        char userChoice = ' ';
+        bool validInput = false;
+
+        while (!validInput) {
             cout << player.getName() << ", what do you do? (A/B): ";
-            cin >> userChoice;
-            userChoice = toupper(userChoice);
 
-            if (userChoice != 'A' && userChoice != 'B')
-                cout << "Invalid input. Please enter A or B.\n";
+            string line;
+            getline(cin, line);
 
-        } while (userChoice != 'A' && userChoice != 'B');
+            if (line.empty()) {
+                cout << "Input cannot be empty. Please enter A or B.\n";
+            } else {
+                userChoice = toupper(line[0]);
+
+                if (userChoice == 'A' || userChoice == 'B') {
+                    validInput = true;
+                } else {
+                    cout << "Invalid input. Please enter A or B.\n";
+                }
+            }
+        }
+
+        lastChoice = userChoice;
+
+        int result;
         if (userChoice == 'A') {
             cout << "\n>> " << consequenceA << endl;
-            return nextSceneIdA;
-        }else {
+            result = nextSceneIdA;
+        } else {
             cout << "\n>> " << consequenceB << endl;
-            return nextSceneIdB;
+            result = nextSceneIdB;
         }
+
+        return result;
     }
 };
 
@@ -617,18 +635,29 @@ public:
         cout << "\n" << description << endl;
 
         int next = presentChoices(player);
+
         if (next == nextSceneIdA) {
             cout << "\n" << question << endl;
-            cout << "\n" << player.getName()<< ", you must answer to proceed."<< endl;
-            cout << "Your answer: ";
+            cout << "\n" << player.getName() << ", you must answer to proceed." << endl;
 
             string userAnswer;
-            cin >> userAnswer;
+            bool validInput = false;
 
-            for (int i = 0; i < answer.size(); i++) {
+            while (!validInput) {
+                cout << "Your answer: ";
+                getline(cin, userAnswer);
+
+                if (userAnswer.empty()) {
+                    cout << "Answer cannot be empty. Try again.\n";
+                } else {
+                    validInput = true;
+                }
+            }
+
+            for (int i = 0; i < (int)answer.size(); i++) {
                 answer[i] = tolower(answer[i]);
             }
-            for (int i = 0; i < userAnswer.size(); i++) {
+            for (int i = 0; i < (int)userAnswer.size(); i++) {
                 userAnswer[i] = tolower(userAnswer[i]);
             }
 
@@ -636,12 +665,12 @@ public:
                 cout << "\n>> Correct! Well done, " << player.getName() << endl;
                 player.addScore(scoreReward);
                 cout << "Your score has increased by " << scoreReward << endl;
-            }else {
+            } else {
                 cout << "Wrong! The answer was: " << answer << endl;
-                player.takeDamage(15);
-                cout << "You take 15 damage for wrong answer";
+                player.takeDamage(damageOnFail);
+                cout << "You take " << damageOnFail << " damage for wrong answer!" << endl;
             }
-        }else {
+        } else {
             player.takeDamage(damageOnFail);
             cout << "You take " << damageOnFail << " damage!" << endl;
         }
@@ -669,11 +698,13 @@ public:
     int play(Player& player) override {
         cout << "\n" << description << endl;
         int next = presentChoices(player);
-        if (next == nextSceneIdA) {
+
+        if (lastChoice == 'A') {
             player.addItem(itemA);
-        }else{
+        } else {
             player.addItem(itemB);
         }
+
         return next;
     }
 };
@@ -683,7 +714,7 @@ private:
     Enemy enemy;
 
     void runCombat(Player& player) {
-        cout << "\n-----Your enemy" << enemy.getName() << "'s stats-----"<< endl;
+        cout << "\n-----Your enemy " << enemy.getName() << "'s stats-----"<< endl;
         cout << "| HP:  " << enemy.getHealth() << endl;
         cout << "| ATK: " << enemy.getAttack() << endl;
         cout << "| DEF: " << enemy.getDefense() << endl;
@@ -745,13 +776,16 @@ public:
     int play(Player& player) override {
         cout << "\n" << description << endl;
         int next = presentChoices(player);
-        if (next == nextSceneIdB) {
+
+        if (lastChoice == 'A') {
+            runCombat(player);
+        } else {
             int roll = rand() % 10;
             if (roll < 3) {
                 cout << "\nYou managed to escape, but not without a hit..." << endl;
                 player.takeDamage(15);
                 cout << "You take 15 damage while running" << endl;
-            }else {
+            } else {
                 cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
                 int enemyDamage = enemy.getAttack() + (rand() % 5) - 2;
                 player.takeDamage(enemyDamage);
@@ -759,9 +793,8 @@ public:
                 cout << "You are forced to fight!" << endl;
                 runCombat(player);
             }
-        }else {
-            runCombat(player);
         }
+
         return next;
     }
 };
@@ -891,7 +924,7 @@ private:
         8, 9,
         "What am I?",
         "map",
-        15, 0
+        15, 15
     ));
 
     // ---- SCENE 8: Ambush Behind the Gate (Combat) ----
@@ -1179,7 +1212,7 @@ public:
         string name;
 
         cout << "\nEnter your name, brave adventurer: ";
-        cin.ignore();
+
         getline(cin, name);
 
         while (name.empty()) {
@@ -1200,22 +1233,17 @@ public:
             bool validInput = false;
 
             while (!validInput) {
+                string line;
+                getline(cin, line);
 
-                if (!(cin >> opt)) {
-                    cout << "Invalid input. Enter C or I: ";
-
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                }
-                else {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-                    opt = toupper(opt);
+                if (line.empty()) {
+                    cout << "Input cannot be empty. Enter C or I: ";
+                } else {
+                    opt = toupper(line[0]);
 
                     if (opt == 'C' || opt == 'I') {
                         validInput = true;
-                    }
-                    else {
+                    } else {
                         cout << "Invalid input. Enter C or I: ";
                     }
                 }
@@ -1265,18 +1293,26 @@ public:
         bool validInput = false;
 
         while (!validInput) {
+            string line;
+            getline(cin, line);
 
-            if (!(cin >> menuChoice)) {
-                cout << "Invalid input. Enter 1 or 2: ";
+            if (line.empty()) {
+                cout << "Input cannot be empty. Enter 1 or 2: ";
+            } else {
+                try {
+                    size_t pos;
+                    menuChoice = stoi(line, &pos);
 
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            }
-            else if (menuChoice < 1 || menuChoice > 2) {
-                cout << "Invalid choice. Enter 1 or 2: ";
-            }
-            else {
-                validInput = true;
+                    if (pos != line.size()) {
+                        cout << "Invalid input. Enter 1 or 2: ";
+                    } else if (menuChoice < 1 || menuChoice > 2) {
+                        cout << "Invalid choice. Enter 1 or 2: ";
+                    } else {
+                        validInput = true;
+                    }
+                } catch (...) {
+                    cout << "Invalid input. Enter 1 or 2: ";
+                }
             }
         }
 
@@ -1295,7 +1331,7 @@ int main() {
     GameManager game;
     game.run();
     return 0;
-} 
+}
 ```
 
 ### Testing
@@ -1340,3 +1376,106 @@ int main() {
 | 33           | Inventory item number  | Extreme valid - Enter last valid index, for example 3 (3 items in inventory) | Equips/uses item 3                        | Equips/uses item 3                        | Test passed            |
 | 34           | Inventory item number  | Extreme invalid - Enter 99                                                   | Prints "Invalid item index"               | Prints "Invalid item index"               | Test passed            |
 | 35           | Inventory item number  | Error - Enter 0                                                              | Prints error, asks again                  | Prints error, asks again                  | Test passed            |
+
+## Annoteted screenshots
+
+![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=EB033C14-708B-4DA3-87F4-7B8A02302841&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.43.png)
+
+Screenshot 1: Main menu validation for empty and invalid inputs, program proceed after valid input 
+
+![fd](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=850FCCD5-296E-4F41-A745-6E6B4AA7AEF4&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.43.png)
+
+Screenshot 2: Player name validation preventing empty input
+
+![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=437FDFBE-7239-46D4-9CFD-EEBA6FA95795&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.44.png)
+
+Screenshot 3: Game loop validation for invalid inputs
+
+![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=D14AC947-78BE-4CD4-973D-390CA5BEB2CA&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.45.png)
+
+Screenshot 4: Scene choice validation  
+
+![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=6D5E32E5-E2EF-45D3-8237-C9F2AAD452DF&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.49.png)
+
+Screenshot 5: Puzzle scene validation for empty input
+
+![gdf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=C3E2BD6B-0280-4EF8-B631-179FA0367A51&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.54.png)
+
+Screenshot 6: Inventory validation for invalid item indexes
+
+![gfd](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=B7C137AF-03F0-4A20-8FA6-E801E16F520C&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.53.png)
+
+Screenshot 7: Inventory system validation for invalid inputs
+
+![gdf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=5F1F4424-95A5-45DD-B900-761D0FD61DE7&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2022.20.png)
+
+Screenshot 8: Game over output after player loses all lives
+
+### Technical elements
+
+**Constants**
+
+Two global constants control the game's limits. MAX_HEALTH is set to 100 and
+defines the maximum health a player can have, preventing healing beyond this
+value. MAX_INVENTORY is set to 10 and defines the maximum number of items a player can carry.
+
+**Enum ItemType**
+
+An enumeration that defines for now the three categories an item can belong to: WEAPON, ARMOUR, and FOOD. This makes the code more readable and allows the program to handle each item type differently without relying on raw numbers or strings.
+
+**Class Item**
+
+Represents a collectable object in the game. Each item stores a name, type, effect value, description, current durability, and maximum durability. Items of type WEAPON increase attack damage, items of type ARMOUR reduce incoming damage, and items of type FOOD restore health when used. The class provides getter
+methods to access its data and methods to reduce durability and check if an
+item is broken.
+
+**Class Player**
+
+Represents the human player and holds all player state including name, health, lives, base attack, score, and inventory. The inventory is stored as a vector of Item objects. Two integer fields equipped_weapon_index and equipped_armour_index track
+which inventory slots are currently equipped, using -1 to indicate nothing is equipped. Key methods include takeDamage() which reduces health and handles life loss, heal() which restores health up to the maximum, addItem() which adds items to the inventory, equipItem() which sets the equipped index for a weapon or armour, useFood() which consumes a food item and heals the player, and showInventory() and showPlayerStats() which display information to the player.
+
+**Class Enemy**
+
+Represents an enemy the player can fight. Stores name, health, attack, defense, score reward, and an optional drop item. The takeDamage() method reduces enemy health accounting for its defense value. The isAlive() method returns whether the enemy still has health remaining. Some enemies are constructed with a drop item that has a chance to be awarded to the player after defeat.
+
+**Class Scene (Parent Class)**
+
+The base class for all scene types. Stores a scene ID, description text, two choices (A and B), their consequence messages, and the next scene IDs they lead to. Also stores lastChoice which records whether the player selected A or B, used by subclasses to determine outcomes. The virtual play() method is overridden by each subclass to define specific behaviour. The presentChoices() method handles displaying options and reading validated player input.
+
+**Class PuzzleScene (inherits Scene)**
+
+A scene type where the player is presented with a riddle or maths challenge. If the
+player chooses to attempt the puzzle (choice A), they must enter the correct
+answer. A correct answer awards score points. An incorrect answer or skipping
+the puzzle (choice B) deals damage to the player. Both outcomes progress to the
+next scene.
+
+**Class ItemScene (inherits Scene)**
+
+A scene type where the player chooses between two items to pick up. The lastChoice field from the base class determines which item is added to the player's inventory.
+
+**Class CombatScene (inherits Scene)**
+
+A scene type where the player encounters an enemy. Choice A initiates direct combat with the private runCombat() method. Choice B attempts an escape, with a
+random roll determining whether the player escapes with minor damage or is
+forced to fight anyway. The runCombat() method runs an automatic turn-based battle loop where both the player and enemy deal randomised damage
+each round until one is defeated.
+
+**Class GameManager**
+
+The central controller of the game. It owns a vector of Scene pointers and a Player object. The setupScenes() method initialises all scenes and adds them to the
+vector. The setupPlayer() method reads the player's name and creates their character. The gameLoop() method runs the main game loop, finding the current scene by ID and calling its play() method until the player runs out of lives. The run() method displays the main menu and starts the game.
+
+**Data Structures**
+
+A vector<Item> is
+used for the player's inventory, allowing items to be added and removed
+dynamically. A vector<Scene*> is used in GameManager to store pointers to all scenes, enabling polymorphism so that play() calls the correct overridden version for each scene type.
+
+**Input Validation**
+
+All user input throughout the program is read using getline() to capture the
+full line including empty input. Each input point validates against expected
+values and displays a specific error message if the input is empty, non-numeric
+where a number is expected, or outside the valid range, prompting the user to
+try again.
