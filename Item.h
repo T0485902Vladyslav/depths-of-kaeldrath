@@ -21,6 +21,7 @@ private:
     int max_durability;
 public:
     Item(string c_name, ItemType c_type, int c_effect_value, string c_description, int c_durability = 0);
+    Item(string c_name, ItemType c_type, int c_effect_value, string c_description, int c_durability, int c_max_durability);
 
     ItemType getType() const;
     string getName() const;

@@ -3,7 +3,7 @@
 #include <vector>
 #include "Item.h"
 using namespace std;
- 
+
 class Player {
 private:
     string name;
@@ -19,18 +19,24 @@ private:
     void printInventoryList() const;
     void printEquipped() const;
     int getItemNumber();
- 
+
 public:
     Player(const string &cname);
     Player();
- 
+
     string getName();
     int getHealth();
     int getLives();
     int getAttackDamage() const;
-    int getDefense()      const;
+    int getDefense() const;
     int getScore();
- 
+    vector<Item> getInventory() const;
+    int getEquippedWeaponIndex() const;
+    int getEquippedArmourIndex() const;
+
+    void loadFromSave(string s_name, int s_health, int s_lives, int s_score,
+        vector<Item> s_inventory, int s_weapon_index, int s_armour_index);
+
     void heal(int amount);
     void takeDamage(int amount);
     void reduceWeaponDurability();

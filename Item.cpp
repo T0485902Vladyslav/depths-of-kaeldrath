@@ -3,12 +3,21 @@
 using namespace std;
 
 Item::Item(string c_name, ItemType c_type, int c_effect_value, string c_description, int c_durability) {
-    name          = c_name;
-    type          = c_type;
-    effect_value  = c_effect_value;
-    description   = c_description;
-    durability     = c_durability;
+    name = c_name;
+    type = c_type;
+    effect_value = c_effect_value;
+    description = c_description;
+    durability = c_durability;
     max_durability = c_durability;
+}
+
+Item::Item(string c_name, ItemType c_type, int c_effect_value, string c_description, int c_durability, int c_max_durability) {
+    name = c_name;
+    type = c_type;
+    effect_value = c_effect_value;
+    description = c_description;
+    durability = c_durability;
+    max_durability = c_max_durability;
 }
 
 ItemType Item::getType() const {

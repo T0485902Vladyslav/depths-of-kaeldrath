@@ -2,6 +2,7 @@
 #include "ItemScene.h"
 #include "PuzzleScene.h"
 #include "CombatScene.h"
+#include "SaveManager.h"
 #include <iostream>
 using namespace std;
 
@@ -402,9 +403,14 @@ void GameManager::showMainMenu() {
     cout << "       A Text Adventure Game" << endl;
     cout << "========================================" << endl;
     cout << "1) New Game" << endl;
-    cout << "2) Quit" << endl;
+    if (save_manager.hasSave()) {
+        cout << "2) Load Game" << endl;
+        cout << "3) Quit" << endl;
+    } else {
+        cout << "2) Quit" << endl;
+    }
     cout << "----------------------------------------" << endl;
-    cout << "Enter choice (1/2): ";
+    cout << "Enter choice: ";
 }
 
 void GameManager::setupPlayer() {
@@ -489,6 +495,7 @@ void GameManager::run() {
 
     int menuChoice = 0;
     bool validInput = false;
+    int maxChoice = save_manager.hasSave() ? 3 : 2;
 
     while (!validInput) {
         string line;
@@ -502,9 +509,9 @@ void GameManager::run() {
                 menuChoice = stoi(line, &pos);
 
                 if (pos != line.size()) {
-                    cout << "Invalid input. Enter 1 or 2: ";
-                } else if (menuChoice < 1 || menuChoice > 2) {
-                    cout << "Invalid choice. Enter 1 or 2: ";
+                    cout << "Invalid input. Enter a number: ";
+                } else if (menuChoice < 1 || menuChoice > maxChoice) {
+                    cout << "Invalid choice. Enter 1-" << maxChoice;
                 } else {
                     validInput = true;
                 }
@@ -514,11 +521,26 @@ void GameManager::run() {
         }
     }
 
-    if (menuChoice == 2) {
-        cout << "\nGoodbye!" << endl;
+    if (save_manager.hasSave()) {
+        if (menuChoice == 3) {
+            cout << "\nGoodbye!" << endl;
+        }
+        else if (menuChoice == 2) {
+            save_manager.loadGame(player, current_scene_ID);
+            gameLoop();
+        }
+        else {
+            setupPlayer();
+            gameLoop();
+        }
     }
     else {
-        setupPlayer();
-        gameLoop();
+        if (menuChoice == 2) {
+            cout << "\nGoodbye!" << endl;
+        }
+        else {
+            setupPlayer();
+            gameLoop();
+        }
     }
 }

@@ -19,4 +19,6 @@ add_executable(T0485902projectC___1 main.cpp
         CombatScene.cpp
         CombatScene.h
         GameManager.cpp
-        GameManager.h)
+        GameManager.h
+        SaveManager.cpp
+        SaveManager.h)

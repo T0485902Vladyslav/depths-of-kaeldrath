@@ -27,28 +27,28 @@ int PuzzleScene::play(Player& player) {
         cout << "\n" << question << endl;
         cout << "\n" << player.getName() << ", you must answer to proceed." << endl;
 
-        string userAnswer;
-        bool validInput = false;
+        string user_answer;
+        bool valid_input = false;
 
-        while (!validInput) {
+        while (!valid_input) {
             cout << "Your answer: ";
-            getline(cin, userAnswer);
+            getline(cin, user_answer);
 
-            if (userAnswer.empty()) {
+            if (user_answer.empty()) {
                 cout << "Answer cannot be empty. Try again.\n";
             } else {
-                validInput = true;
+                valid_input = true;
             }
         }
 
         for (int i = 0; i < (int)answer.size(); i++) {
             answer[i] = tolower(answer[i]);
         }
-        for (int i = 0; i < (int)userAnswer.size(); i++) {
-            userAnswer[i] = tolower(userAnswer[i]);
+        for (int i = 0; i < (int)user_answer.size(); i++) {
+            user_answer[i] = tolower(user_answer[i]);
         }
 
-        if (userAnswer == answer) {
+        if (user_answer == answer) {
             cout << "\n>> Correct! Well done, " << player.getName() << endl;
             player.addScore(score_reward);
             cout << "Your score has increased by " << score_reward << endl;

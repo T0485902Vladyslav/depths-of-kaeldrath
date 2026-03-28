@@ -47,10 +47,37 @@ int Player::getAttackDamage() const {
 }
 
 int Player::getDefense() const {
+    int defense = 0;
+
     if (equipped_armour_index != -1 && !inventory[equipped_armour_index].isBroken()) {
-        return inventory[equipped_armour_index].getEffectValue();
+        defense = inventory[equipped_armour_index].getEffectValue();
     }
-    return 0;
+
+    return defense;
+}
+
+vector<Item> Player::getInventory() const {
+    return inventory;
+}
+
+int Player::getEquippedWeaponIndex() const {
+    return equipped_weapon_index;
+}
+
+int Player::getEquippedArmourIndex() const {
+    return equipped_armour_index;
+}
+
+void Player::loadFromSave(string s_name, int s_health, int s_lives, int s_score,
+    vector<Item> s_inventory, int s_weapon_index, int s_armour_index) {
+
+    name = s_name;
+    health = s_health;
+    lives = s_lives;
+    score = s_score;
+    inventory = s_inventory;
+    equipped_weapon_index = s_weapon_index;
+    equipped_armour_index = s_armour_index;
 }
 
 void Player::heal(int amount) {
@@ -86,6 +113,7 @@ void Player::takeDamage(int amount) {
 void Player::reduceWeaponDurability() {
     if (equipped_weapon_index != -1) {
         inventory[equipped_weapon_index].reduceDurability();
+
         if (inventory[equipped_weapon_index].isBroken()) {
             cout << "Your " << inventory[equipped_weapon_index].getName() << " broke" << endl;
             equipped_weapon_index = -1;
@@ -103,14 +131,17 @@ void Player::addScore(int amount) {
 
 bool Player::addItem(const Item& item) {
     bool success = false;
+
     if (inventory.size() < MAX_INVENTORY) {
         inventory.push_back(item);
         cout << "You picked up: " << item.getName() << endl;
         cout << "To equip, use or swap the item, open your inventory" << endl;
         success = true;
-    }else {
+    }
+    else {
         cout << "Inventory is full." << endl;
     }
+
     return success;
 }
 
@@ -140,9 +171,11 @@ void Player::equipItem(int index) {
 void Player::useFood(int index) {
     if (index < 0 || index >= (int)inventory.size()) {
         cout << "Invalid item." << endl;
-    } else if (inventory[index].getType() != ItemType::FOOD) {
+    }
+    else if (inventory[index].getType() != ItemType::FOOD) {
         cout << "You can only use food items." << endl;
-    } else {
+    }
+    else {
         Item& item = inventory[index];
         heal(item.getEffectValue());
 
