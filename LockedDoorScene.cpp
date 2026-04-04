@@ -25,6 +25,7 @@ int LockedDoorScene::play(Player& player) {
             cout << "\nThe door is locked. You don't have the right key." << endl;
             cout << "You try to force it open..." << endl;
 
+            // 20% chance to break the lock without a key
             int roll = rand() % 10;
             if (roll < 2) {
                 cout << "The lock breaks! You forced the door open!" << endl;
@@ -38,6 +39,7 @@ int LockedDoorScene::play(Player& player) {
         }
     }
     else {
+        // Alternative path: squeeze through a crack, always takes damage
         cout << "\nYou squeeze through a narrow crack in the wall." << endl;
         cout << "Loose stones fall from above and hit you. You take 10 damage!" << endl;
         player.takeDamage(10);

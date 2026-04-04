@@ -8,6 +8,7 @@ SaveManager::SaveManager() {
     save_file = "save.txt";
 }
 
+// Converts ItemType enum to string for writing to file
 string SaveManager::itemTypeToString(ItemType type) const {
     string result = "FOOD";
     if (type == ItemType::WEAPON) {
@@ -21,6 +22,7 @@ string SaveManager::itemTypeToString(ItemType type) const {
     return result;
 }
 
+// Converts string from file back to ItemType enum
 ItemType SaveManager::stringToItemType(const string& str) const {
     ItemType result = ItemType::FOOD;
     if (str == "WEAPON") {
@@ -34,6 +36,7 @@ ItemType SaveManager::stringToItemType(const string& str) const {
     return result;
 }
 
+// Checks if a save file exists
 bool SaveManager::hasSave() {
     ifstream file(save_file);
     return file.good();
@@ -58,6 +61,8 @@ void SaveManager::saveGame(Player& player, int current_scene_id) const {
 
             string name = item.getName();
             string description = item.getDescription();
+
+            // Spaces become underscores to prevent >> from splitting multi-word names
             for (char& c : name) {
                 if (c == ' ') {
                     c = '_';
@@ -122,6 +127,7 @@ bool SaveManager::loadGame(Player& player, int& current_scene_id) const {
             file >> durability;
             file >> max_durability;
 
+            // Restore underscores back to spaces
             for (char& c : item_name) {
                 if (c == '_') {
                     c = ' ';
@@ -134,9 +140,11 @@ bool SaveManager::loadGame(Player& player, int& current_scene_id) const {
                 }
             }
 
+            // Use second constructor to restore both durability and max_durability independently
             inventory.push_back(Item(item_name, stringToItemType(type_str),
                 effect,item_description,durability, max_durability));
         }
+
         file >> weapon_index;
         file >> armour_index;
         file.close();

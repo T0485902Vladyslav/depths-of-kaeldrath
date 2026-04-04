@@ -18,6 +18,8 @@ PuzzleScene::PuzzleScene(int c_index, const string& c_description,
     damage_on_fail = c_damage_on_fail;
     }
 
+// If player chose A: ask the question, check answer and reward or punish
+// If player chose B: skip puzzle and take damage
 int PuzzleScene::play(Player& player) {
     cout << "\n" << description << endl;
 
@@ -41,11 +43,12 @@ int PuzzleScene::play(Player& player) {
             }
         }
 
-        for (int i = 0; i < (int)answer.size(); i++) {
-            answer[i] = tolower(answer[i]);
+        // Convert both to lowercase for proper comparison
+        for (char & i : answer) {
+            i = tolower(i);
         }
-        for (int i = 0; i < (int)user_answer.size(); i++) {
-            user_answer[i] = tolower(user_answer[i]);
+        for (char & i : user_answer) {
+            i = tolower(i);
         }
 
         if (user_answer == answer) {

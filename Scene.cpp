@@ -20,11 +20,13 @@ int Scene::getSceneId() const {
     return scene_id;
 }
 
+// Default scene just shows description and presents choices
 int Scene::play(Player& player) {
     cout << "\n" << description << endl;
     return presentChoices(player);
 }
 
+// Shows A/B choices, validates input and returns the next scene ID
 int Scene::presentChoices(Player& player) {
     cout << "\nA) " << choice_A << endl;
     cout << "B) " << choice_B << endl;
@@ -52,6 +54,7 @@ int Scene::presentChoices(Player& player) {
         }
     }
 
+    // Store last choice so subclasses can check it in their play() override
     last_choice = userChoice;
 
     int result;

@@ -13,6 +13,7 @@ ItemScene::ItemScene(int c_index, string c_description,
         c_next_scene_A, c_next_scene_B),
         item_A(c_item_A), item_B(c_item_B) {}
 
+// Gives player the item matching their choice
 int ItemScene::play(Player& player) {
     cout << "\n" << description << endl;
     int next = presentChoices(player);

@@ -3,6 +3,7 @@
 #include <limits>
 using namespace std;
 
+// Main constructor, sets default stats for a new game
 Player::Player(const string &cname) {
     name = cname;
     health = MAX_HEALTH;
@@ -10,10 +11,12 @@ Player::Player(const string &cname) {
     base_attack = 10;
     defense = 0;
     score = 0;
+    // -1 means nothing equipped
     equipped_weapon_index = -1;
     equipped_armour_index = -1;
 }
 
+// Default constructor, used by GameManager before player name is set
 Player::Player() {
     name = "";
     health = MAX_HEALTH;
@@ -38,6 +41,7 @@ int Player::getScore() {
     return score;
 }
 
+// Returns attack including equipped weapon effect
 int Player::getAttackDamage() const {
     int attack = base_attack;
     if (equipped_weapon_index != -1 && !inventory[equipped_weapon_index].isBroken()) {
@@ -46,6 +50,7 @@ int Player::getAttackDamage() const {
     return attack;
 }
 
+// Returns defense from equipped armour, 0 if none equipped or broken
 int Player::getDefense() const {
     int defense = 0;
 
@@ -68,6 +73,7 @@ int Player::getEquippedArmourIndex() const {
     return equipped_armour_index;
 }
 
+// Restores player when loading from a save file
 void Player::loadFromSave(string s_name, int s_health, int s_lives, int s_score,
     vector<Item> s_inventory, int s_weapon_index, int s_armour_index) {
 
@@ -80,6 +86,7 @@ void Player::loadFromSave(string s_name, int s_health, int s_lives, int s_score,
     equipped_armour_index = s_armour_index;
 }
 
+// Heals player by amount, capped at MAX_HEALTH
 void Player::heal(int amount) {
     health += amount;
     if (health > MAX_HEALTH) {
@@ -88,12 +95,14 @@ void Player::heal(int amount) {
 }
 
 void Player::takeDamage(int amount) {
+    // Armour reduces incoming damage
     int actualDamage = amount - getDefense();
     if (actualDamage < 0) {
         actualDamage = 0;
     }
     health -= actualDamage;
 
+    // Reduce armour durability on every hit
     if (equipped_armour_index != -1) {
         inventory[equipped_armour_index].reduceDurability();
         if (inventory[equipped_armour_index].isBroken()) {
@@ -108,12 +117,14 @@ void Player::takeDamage(int amount) {
     }
 }
 
+// Resets HP to full after losing a life so player can try again
 void Player::resetAfterDeath() {
     if (lives > 0) {
         health = MAX_HEALTH;
     }
 }
 
+// Reduces weapon durability after each attack in combat scene
 void Player::reduceWeaponDurability() {
     if (equipped_weapon_index != -1) {
         inventory[equipped_weapon_index].reduceDurability();
@@ -179,6 +190,7 @@ void Player::equipItem(int index) {
     }
 }
 
+// Uses food item at given index, removes it from inventory after use
 void Player::useFood(int index) {
     if (index < 0 || index >= (int)inventory.size()) {
         cout << "Invalid item." << endl;
@@ -195,6 +207,7 @@ void Player::useFood(int index) {
 
         inventory.erase(inventory.begin() + index);
 
+        // Shift equipped indices to stay in sync after item removed
         if (equipped_weapon_index > index) {
             equipped_weapon_index--;
         } else if (equipped_weapon_index == index) {
@@ -209,6 +222,7 @@ void Player::useFood(int index) {
     }
 }
 
+// Shows numbered inventory list with durability for weapons and armour
 void Player::printInventoryList() const {
     cout << "\n=== Inventory ===" << endl;
 
@@ -247,6 +261,7 @@ void Player::printEquipped() const {
     }
 }
 
+// Prompts user for a valid item number
 int Player::getItemNumber() {
     int num = 0;
     bool valid = false;
@@ -280,6 +295,7 @@ int Player::getItemNumber() {
             }
         }
     }
+    //return valid index - 1 because vector indices start at 0, but user sees items starting from 1
     return num - 1;
 }
 
@@ -328,6 +344,7 @@ void Player::showPlayerStats() const {
     cout << "Score: " << score << endl;
 }
 
+// Checks if a specific key is in inventory by name
 bool Player::hasKey(const string& key_name) const {
     bool found = false;
     for (int i = 0; i < (int)inventory.size(); i++) {
@@ -338,6 +355,7 @@ bool Player::hasKey(const string& key_name) const {
     return found;
 }
 
+// Removes the matching key from inventory after it has been used
 void Player::removeKey(const string& key_name) {
     for (int i = 0; i < (int)inventory.size(); i++) {
         if (inventory[i].getType() == ItemType::KEY && inventory[i].getName() == key_name) {

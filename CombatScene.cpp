@@ -10,6 +10,7 @@ CombatScene::CombatScene(int cindex, string cdescription, string cchoiceA, strin
 : Scene(cindex, cdescription, cchoiceA, cchoiceB,
             cconsequenceA, cconsequenceB, cnextSceneA, cnextSceneB), enemy(cenemy){}
 
+// Runs the turn-based combat loop between player and enemy
 void CombatScene::runCombat(Player& player) {
     cout << "\n-----Your enemy " << enemy.getName() << "'s stats-----"<< endl;
     cout << "| HP:  " << enemy.getHealth() << endl;
@@ -18,9 +19,11 @@ void CombatScene::runCombat(Player& player) {
 
     Enemy currentEnemy = enemy;
 
-    this_thread::sleep_for(chrono::milliseconds(1500)); // pause for better effect of fight
+    // pause for better effect of fight
+    this_thread::sleep_for(chrono::milliseconds(1500));
 
     while (currentEnemy.isAlive() && player.isAlive()) {
+        // Add random variance of -2 to +2 to attack damage
         int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
         if (playerDamage < 0) {
             playerDamage = 0;
@@ -34,8 +37,10 @@ void CombatScene::runCombat(Player& player) {
             break;
         }
 
-        this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
+        // pause for better effect of fight
+        this_thread::sleep_for(chrono::milliseconds(1000));
 
+        // Track lives before hit to detect if player died from this attack
         int lives_before = player.getLives();
         int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
         if (enemyDamage < 0) {
@@ -46,13 +51,15 @@ void CombatScene::runCombat(Player& player) {
         cout << currentEnemy.getName() << " attacks you for " << enemyDamage
              << " damage! (Your HP: " << player.getHealth() << ")" << endl;
 
+        // If player lost a life from this hit, it exits combat, scene will retry
         if (player.getLives() < lives_before) {
             cout << "You have been defeated! Lives remaining: " << player.getLives() << endl;
             player.resetAfterDeath();
             break;
         }
 
-        this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
+        // pause for better effect of fight
+        this_thread::sleep_for(chrono::milliseconds(1000));
     }
 
     if (currentEnemy.isAlive()) {
@@ -64,14 +71,15 @@ void CombatScene::runCombat(Player& player) {
         cout << "Your score increased by " << currentEnemy.getScoreReward() << endl;
 
         if (currentEnemy.getHasDrop()) {
-            int dropRoll = rand() % 10;
+            int drop_roll = rand() % 10;
             int threshold = 4; // 40% default for items
 
+            // Keys have higher drop chance so player usually gets access to locked doors
             if (currentEnemy.getDropItem().getType() == ItemType::KEY) {
                 threshold = 6; // 60% for keys
             }
 
-            if (dropRoll < threshold) {
+            if (drop_roll < threshold) {
                 cout << "After defeating the " << currentEnemy.getName() << " you receive loot "
                 << currentEnemy.getDropItem().getName() << "!" << endl;
                 player.addItem(currentEnemy.getDropItem());
@@ -80,6 +88,7 @@ void CombatScene::runCombat(Player& player) {
     }
 }
 
+// Player chooses to fight or escape, combat runs, returns same scene if life was lost
 int CombatScene::play(Player& player) {
     cout << "\n" << description << endl;
     int next = presentChoices(player);
@@ -89,6 +98,7 @@ int CombatScene::play(Player& player) {
     if (last_choice == 'A') {
         runCombat(player);
     } else {
+        // 30% chance to escape, otherwise forced to fight
         int roll = rand() % 10;
         if (roll < 3) {
             cout << "\nYou managed to escape, but not without a hit..." << endl;
@@ -104,6 +114,7 @@ int CombatScene::play(Player& player) {
         }
     }
 
+    // If a life was lost, return same scene so player will be fighting again
     if (player.getLives() < lives_before) {
         cout << "\nYou lost a life! Lives remaining: " << player.getLives() << endl;
         cout << "You recover and prepare to try again..." << endl;

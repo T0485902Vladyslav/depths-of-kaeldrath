@@ -1,5 +1,7 @@
 #include "Enemy.h"
 
+//Constructor for enemies without a drop item.
+//drop_item initialised with empty values since Item has no default constructor.
 Enemy::Enemy(string c_name, int c_health, int c_attack, int c_defense, int c_score_reward)
     : drop_item("", ItemType::WEAPON, 0, "") {
     name = c_name;
@@ -10,6 +12,7 @@ Enemy::Enemy(string c_name, int c_health, int c_attack, int c_defense, int c_sco
     has_drop = false;
 }
 
+// Constructor for enemies that can drop an item on defeat
 Enemy::Enemy(string c_name, int c_health, int c_attack, int c_defense, int c_score_reward, Item c_drop_item)
     : drop_item(c_drop_item) {
     name = c_name;
@@ -46,11 +49,13 @@ bool Enemy::isAlive() const {
 }
 
 void Enemy::takeDamage(int damage) {
+    // Defense reduces incoming damage, locked to 0 to prevent healing from attacks
     int actual_damage = damage - defense;
     if (actual_damage < 0) {
         actual_damage = 0;
     }
     health -= actual_damage;
+    //To prevent negative health
     if (health < 0) {
         health = 0;
     }

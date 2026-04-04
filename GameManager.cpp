@@ -576,6 +576,7 @@ void GameManager::setupScenes() {
     ));
 }
 
+// Shows Load Game option only if a save file exists
 void GameManager::showMainMenu() {
     cout << "\n========================================" << endl;
     cout << "       DEPTHS OF KAEL'DRATH" << endl;
@@ -663,6 +664,7 @@ void GameManager::gameLoop() {
                 break;
             }
 
+            // Scene 99 is the victory, both wing bosses lead here
             if (next == 99) {
                 cout << "\n========================================" << endl;
                 cout << "         *** VICTORY! ***" << endl;
@@ -690,6 +692,7 @@ void GameManager::run() {
 
     int menu_choice = 0;
     bool valid_input = false;
+    // max_choice changes based on whether a save file exists
     int max_choice = save_manager.hasSave() ? 3 : 2;
 
     while (!valid_input) {
