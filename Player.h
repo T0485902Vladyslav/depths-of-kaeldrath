@@ -39,6 +39,7 @@ public:
 
     void heal(int amount);
     void takeDamage(int amount);
+    void resetAfterDeath();
     void reduceWeaponDurability();
     bool isAlive() const;
     void addScore(int amount);

@@ -89,7 +89,9 @@ void Player::heal(int amount) {
 
 void Player::takeDamage(int amount) {
     int actualDamage = amount - getDefense();
-    if (actualDamage < 0) actualDamage = 0;
+    if (actualDamage < 0) {
+        actualDamage = 0;
+    }
     health -= actualDamage;
 
     if (equipped_armour_index != -1) {
@@ -103,10 +105,12 @@ void Player::takeDamage(int amount) {
     if (health <= 0) {
         health = 0;
         lives--;
-        if (lives > 0) {
-            health = MAX_HEALTH;
-            cout << "You lost a life! Lives remaining: " << lives << endl;
-        }
+    }
+}
+
+void Player::resetAfterDeath() {
+    if (lives > 0) {
+        health = MAX_HEALTH;
     }
 }
 
@@ -135,7 +139,14 @@ bool Player::addItem(const Item& item) {
     if (inventory.size() < MAX_INVENTORY) {
         inventory.push_back(item);
         cout << "You picked up: " << item.getName() << endl;
-        cout << "To equip, use or swap the item, open your inventory" << endl;
+
+        if (item.getType() == ItemType::WEAPON || item.getType() == ItemType::ARMOUR) {
+            cout << "To equip or swap the item, open your inventory" << endl;
+        }
+        else if (item.getType() == ItemType::FOOD) {
+            cout << "To use the item, open your inventory" << endl;
+        }
+
         success = true;
     }
     else {

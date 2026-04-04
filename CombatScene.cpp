@@ -5,10 +5,10 @@
 #include <cstdlib>
 using namespace std;
 
-CombatScene::CombatScene(int c_index, string c_description, string c_choice_A, string c_choice_B,
-    string c_consequence_A, string c_consequence_B, int c_next_scene_A, int c_next_scene_B, Enemy c_enemy)
-: Scene(c_index, c_description, c_choice_A, c_choice_B,
-            c_consequence_A, c_consequence_B, c_next_scene_A, c_next_scene_B), enemy(c_enemy){}
+CombatScene::CombatScene(int cindex, string cdescription, string cchoiceA, string cchoiceB,
+    string cconsequenceA, string cconsequenceB, int cnextSceneA, int cnextSceneB, Enemy cenemy)
+: Scene(cindex, cdescription, cchoiceA, cchoiceB,
+            cconsequenceA, cconsequenceB, cnextSceneA, cnextSceneB), enemy(cenemy){}
 
 void CombatScene::runCombat(Player& player) {
     cout << "\n-----Your enemy " << enemy.getName() << "'s stats-----"<< endl;
@@ -18,7 +18,7 @@ void CombatScene::runCombat(Player& player) {
 
     Enemy currentEnemy = enemy;
 
-    this_thread::sleep_for(chrono::milliseconds(1500));
+    this_thread::sleep_for(chrono::milliseconds(1500)); // pause for better effect of fight
 
     while (currentEnemy.isAlive() && player.isAlive()) {
         int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
@@ -27,8 +27,8 @@ void CombatScene::runCombat(Player& player) {
         }
         currentEnemy.takeDamage(playerDamage);
         player.reduceWeaponDurability();
-        cout << "\nYou attack " << currentEnemy.getName() << " for " << playerDamage << " damage!" <<
-            " (Enemy HP: " << currentEnemy.getHealth() << ")" << endl;
+        cout << "\nYou attack " << currentEnemy.getName() << " for " << playerDamage << " damage!"
+             <<" (Enemy HP: " << currentEnemy.getHealth() << ")" << endl;
 
         if (!currentEnemy.isAlive()) {
             break;
@@ -36,26 +36,42 @@ void CombatScene::runCombat(Player& player) {
 
         this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
 
+        int lives_before = player.getLives();
         int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
         if (enemyDamage < 0) {
             enemyDamage = 0;
         }
-        player.takeDamage(enemyDamage);
-        cout << currentEnemy.getName() << " attacks you for " << enemyDamage << " damage!" <<
-            " (Your HP: " << player.getHealth() << ")" << endl;
 
-        this_thread::sleep_for(chrono::milliseconds(1000));
+        player.takeDamage(enemyDamage);
+        cout << currentEnemy.getName() << " attacks you for " << enemyDamage
+             << " damage! (Your HP: " << player.getHealth() << ")" << endl;
+
+        if (player.getLives() < lives_before) {
+            cout << "You have been defeated! Lives remaining: " << player.getLives() << endl;
+            player.resetAfterDeath();
+            break;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(1000)); // pause for better effect of fight
     }
+
     if (currentEnemy.isAlive()) {
         cout << "\nYou were defeated by " << enemy.getName() << "..." << endl;
-    }else {
+    }
+    else {
         cout << "\nYou defeated " << enemy.getName() << "!" << endl;
         player.addScore(currentEnemy.getScoreReward());
         cout << "Your score increased by " << currentEnemy.getScoreReward() << endl;
 
         if (currentEnemy.getHasDrop()) {
             int dropRoll = rand() % 10;
-            if (dropRoll < 4) {
+            int threshold = 4; // 40% default for items
+
+            if (currentEnemy.getDropItem().getType() == ItemType::KEY) {
+                threshold = 6; // 60% for keys
+            }
+
+            if (dropRoll < threshold) {
                 cout << "After defeating the " << currentEnemy.getName() << " you receive loot "
                 << currentEnemy.getDropItem().getName() << "!" << endl;
                 player.addItem(currentEnemy.getDropItem());
@@ -67,6 +83,8 @@ void CombatScene::runCombat(Player& player) {
 int CombatScene::play(Player& player) {
     cout << "\n" << description << endl;
     int next = presentChoices(player);
+
+    int lives_before = player.getLives();
 
     if (last_choice == 'A') {
         runCombat(player);
@@ -84,6 +102,13 @@ int CombatScene::play(Player& player) {
             cout << "You are forced to fight!" << endl;
             runCombat(player);
         }
+    }
+
+    if (player.getLives() < lives_before) {
+        cout << "\nYou lost a life! Lives remaining: " << player.getLives() << endl;
+        cout << "You recover and prepare to try again..." << endl;
+        cout << "Open your inventory to re-equip before the next attempt." << endl;
+        next = scene_id;
     }
 
     return next;

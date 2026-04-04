@@ -23,10 +23,24 @@ int LockedDoorScene::play(Player& player) {
             next = next_scene_id_A;
         } else {
             cout << "\nThe door is locked. You don't have the right key." << endl;
-            cout << "You try to force it open but take " << damage_on_fail << " damage!" << endl;
-            player.takeDamage(damage_on_fail);
-            next = next_scene_no_key;
+            cout << "You try to force it open..." << endl;
+
+            int roll = rand() % 10;
+            if (roll < 2) {
+                cout << "The lock breaks! You forced the door open!" << endl;
+                next = next_scene_id_A;
+            } else {
+                cout << "The door doesn't budge. You take " << damage_on_fail << " damage!" << endl;
+                player.takeDamage(damage_on_fail);
+                cout << "You give up and look for another way through..." << endl;
+                next = next_scene_no_key;
+            }
         }
+    }
+    else {
+        cout << "\nYou squeeze through a narrow crack in the wall." << endl;
+        cout << "Loose stones fall from above and hit you. You take 10 damage!" << endl;
+        player.takeDamage(10);
     }
 
     return next;

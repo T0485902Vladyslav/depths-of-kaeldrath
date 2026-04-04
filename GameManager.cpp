@@ -3,6 +3,7 @@
 #include "PuzzleScene.h"
 #include "CombatScene.h"
 #include "SaveManager.h"
+#include "LockedDoorScene.h"
 #include <iostream>
 using namespace std;
 
@@ -19,23 +20,26 @@ GameManager::~GameManager() {
 
 void GameManager::setupScenes() {
 
+    // ==================== SHARED START ====================
+
     // ---- SCENE 0: Dungeon Entrance (Item) ----
+    // Both -> Scene 1
     scenes.push_back(new ItemScene(
         0,
         "You stand at the entrance of Kael'Drath dungeon.\n"
         "A dead adventurer lies near the door.\n"
         "He has two items. You can only take one.",
         "Take the old sword",
-        "Take the bread",
+        "Take the leather vest",
         "You take the sword. It is heavy but sharp.",
-        "You take the bread and eat it. You feel stronger.",
+        "You put on the vest. It fits well.",
         1, 1,
-        Item("Old Sword", ItemType::WEAPON, 5,  "A heavy sword. Attack +5", 10),
-        Item("Bread",     ItemType::FOOD,   20, "Restores health. Health +20", 0)
+        Item("Old Sword",    ItemType::WEAPON, 5, "A heavy sword. Attack +5", 10),
+        Item("Leather Vest", ItemType::ARMOUR, 4, "Light armour. Defense +4", 10)
     ));
 
     // ---- SCENE 1: The Dark Hall (Lore) ----
-    // Splits into East Wing (2) or West Wing (10)
+    // A -> East Wing (2), B -> West Wing (10)
     scenes.push_back(new Scene(
         1,
         "You enter a long dark hall.\n"
@@ -51,132 +55,119 @@ void GameManager::setupScenes() {
 
     // ==================== EAST WING ====================
 
-    // ---- SCENE 2: Sheep Puzzle (Puzzle) ----
-    // Solved -> Scene 3 (combat - skeleton was behind door)
-    // Skipped -> Scene 4 (item - quiet corridor, find gear)
+    // ---- SCENE 2: Stone Door Puzzle ----
+    // A (answer) -> 4 Item (door opens quietly, safe path)
+    // B (smash)  -> 3 Combat (noise attracts skeleton)
     scenes.push_back(new PuzzleScene(
         2,
         "You walk into a small room.\n"
         "A stone door blocks the way forward.\n"
-        "A sign on the door reads: Solve this to open the door.",
-        "Answer the question",
-        "Try to break the door",
+        "A sign reads: Solve this to open the door.",
+        "Answer the riddle",
+        "Smash the door open",
         "You think carefully...",
-        "You smash the door open. Your hands hurt.",
-        3, 4,
-        "A farmer has 10 sheep. All but 6 run away. How many sheep are left?",
-        "6",
-        10, 10
+        "You smash the door. The noise echoes through the dungeon.",
+        4, 3,
+        "I have keys but no locks. I have space but no room.\n"
+        "You can enter but cannot go inside. What am I?",
+        "keyboard",
+        15, 10
     ));
 
-    // ---- SCENE 3: Skeleton Behind the Door (Combat) ----
-    // Solving the puzzle opened the door - something was waiting inside
-    // Both -> Scene 6
+    // ---- SCENE 3: Skeleton Warrior (Combat) ----
+    // Smashing attracted it
+    // Both -> 6
     scenes.push_back(new CombatScene(
         3,
-        "The door swings open.\n"
-        "A skeleton warrior was chained behind it - now it is free.\n"
-        "It raises its rusty sword and charges at you!",
+        "The noise from the door attracts something from the shadows.\n"
+        "A skeleton warrior charges at you, rusty sword raised!\n"
+        "It was patrolling nearby and heard the commotion.",
         "Fight the skeleton",
         "Try to run back",
         "You draw your weapon and face it!",
         "You try to escape...",
         6, 6,
-        Enemy("Skeleton Warrior", 35, 12, 2, 15,
+        Enemy("Skeleton Warrior", 40, 14, 2, 15,
             Item("Bone Sword", ItemType::WEAPON, 3, "A cracked blade. Attack +3", 6))
     ));
 
-    // ---- SCENE 4: Quiet Corridor (Item) ----
-    // Breaking the door led you around - quiet path, find an item
-    // Both -> Scene 6
+    // ---- SCENE 4: Side Passage (Item) ----
+    // Solved riddle - door opened quietly, safe path
+    // Both -> 6
     scenes.push_back(new ItemScene(
         4,
-        "You squeeze through a side passage.\n"
-        "The corridor is quiet. No enemies here.\n"
+        "The door opens silently. No enemies here.\n"
+        "You find a quiet side passage.\n"
         "On the floor you spot two items left by a previous adventurer.",
-        "Take the torch shield",
-        "Take the leather vest",
-        "You pick up the shield. It is light but solid.",
-        "You put on the vest. It fits well.",
+        "Take the chain gloves",
+        "Take the bread loaf",
+        "You put on the gloves. Solid hand protection.",
+        "You pick up the bread. Better than nothing.",
         6, 6,
-        Item("Torch Shield", ItemType::ARMOUR, 4, "Light protection. Defense +4", 8),
-        Item("Leather Vest", ItemType::ARMOUR, 6, "Decent armour. Defense +6", 10)
+        Item("Chain Gloves", ItemType::ARMOUR, 3, "Hand protection. Defense +3", 8),
+        Item("Bread Loaf",   ItemType::FOOD,   25, "Restores health. Health +25", 0)
     ));
 
-    // ---- SCENE 6: Old Storage Room (Item) ----
-    // Both -> Scene 7
-    scenes.push_back(new ItemScene(
-        6,
-        "You find an old storage room.\n"
-        "Shelves line the walls. Most are empty.\n"
-        "But you spot two items - a weapon on a rack and a locked chest.",
-        "Take the iron sword from the rack",
-        "Force open the locked chest",
-        "You grab a solid iron sword.",
-        "You break the lock. Inside is a health potion.",
-        7, 7,
-        Item("Iron Sword",    ItemType::WEAPON, 6, "A solid blade. Attack +6", 10),
-        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30", 0)
-    ));
-
-    // ---- SCENE 7: Map Riddle Gate (Puzzle) ----
-    // Solved -> Scene 8 (combat - ambush, two goblins were hiding behind gate)
-    // Failed/skipped -> Scene 9 (lore - ghost of old soldier gives you sword)
+    // ---- SCENE 6: Iron Gate Puzzle ----
+    // A (answer) -> 8 Item (gate opens silently, hidden chamber)
+    // B (crawl)  -> 7 Combat (goblins on the other side spot you)
     scenes.push_back(new PuzzleScene(
-        7,
+        6,
         "You reach an iron gate blocking the corridor.\n"
         "A riddle is carved above it:\n"
         "I have cities but no houses. Mountains but no trees.\n"
         "Water but no fish. What am I?",
         "Answer the riddle",
         "Look for another way around",
-        "You speak the answer. The gate clicks open...",
-        "You find a loose brick in the wall and crawl through.",
-        8, 9,
+        "You speak the answer. The gate clicks open silently...",
+        "You find a loose brick and crawl through.\n"
+        "Two goblins on the other side spot you immediately!",
+        8, 7,
         "What am I?",
         "map",
         15, 15
     ));
 
-    // ---- SCENE 8: Ambush Behind the Gate (Combat) ----
-    // Goblins were hiding - solving puzzle let them out
-    // Both -> Scene 23
+    // ---- SCENE 7: Goblin Ambush (Combat) ----
+    // Crawled through - goblins spotted you
+    // Both -> 9
     scenes.push_back(new CombatScene(
-        8,
-        "The gate swings open - two goblins leap out from behind it!\n"
-        "They were hiding, waiting for someone to open the door.\n"
-        "They screech and attack!",
-        "Fight them both",
+        7,
+        "The two goblins screech and attack!\n"
+        "They were patrolling this side of the wall.\n"
+        "You have no choice but to fight.",
+        "Fight them",
         "Try to dodge past them",
         "You raise your weapon and charge!",
         "You try to slip past...",
-        23, 23,
-        Enemy("Goblin Ambushers", 45, 14, 3, 20)
+        9, 9,
+        Enemy("Goblin Ambushers", 50, 15, 3, 20,
+            Item("Goblin Rations", ItemType::FOOD, 20, "Smells bad but edible. Health +20", 0))
     ));
 
-    // ---- SCENE 9: Ghost of the Old Soldier (Item) ----
-    // Crawling through the wall you find a hidden chamber with a ghost
-    // Both -> Scene 23
-        scenes.push_back(new ItemScene(
-        9,
-        "You crawl through the wall into a hidden chamber.\n"
+    // ---- SCENE 8: Hidden Chamber (Item) ----
+    // Gate opened silently - ghost's chamber revealed
+    // Both -> 9
+    scenes.push_back(new ItemScene(
+        8,
+        "The gate swings open to reveal a hidden chamber.\n"
         "A faint blue glow fills the room.\n"
         "The ghost of an old soldier stands before you.\n"
-        "He says: I died here a hundred years ago. Take my sword.\n"
-        "A glowing sword appears on the floor before you.",
-        "Take the ghost sword", "Leave it and move on",
+        "He says: Take my equipment. You will need it.",
+        "Take the ghost sword",
+        "Take the ghost armour",
         "You pick up the sword. It hums with energy.",
-        "You leave it. The ghost fades silently.",
-        23, 23,
-        Item("Ghost Sword", ItemType::WEAPON, 8, "Hums with energy. Attack +8", 12),
-        Item("",            ItemType::FOOD,   0, "", 0)
+        "You pick up the ghost armour. It feels strangely warm.",
+        9, 9,
+        Item("Ghost Sword",  ItemType::WEAPON, 8, "Hums with energy. Attack +8", 12),
+        Item("Ghost Armour", ItemType::ARMOUR, 7, "Glows faintly. Defense +7", 12)
     ));
 
-    // ---- SCENE 23: Goblin Patrol (Combat) ----
-    // Both east paths merge here before the final east boss
-    // Both -> Scene 14
+    // ---- SCENE 9: Goblin Patrol (Combat) ----
+    // Drop: Dungeon Key (40% chance)
+    // Both -> 25 LockedDoor
     scenes.push_back(new CombatScene(
-        23,
+        9,
         "A goblin patrol rounds the corner ahead.\n"
         "Three goblins with spears. They spot you immediately.\n"
         "There is nowhere to hide.",
@@ -184,32 +175,115 @@ void GameManager::setupScenes() {
         "Try to run back",
         "You grip your weapon and charge!",
         "You turn and run...",
-        14, 14,
-        Enemy("Goblin Patrol", 50, 13, 2, 20,
-            Item("Goblin Spear", ItemType::WEAPON, 4, "A crude spear. Attack +4", 7))
+        25, 25,
+        Enemy("Goblin Patrol", 55, 14, 2, 20,
+            Item("Dungeon Key", ItemType::KEY, 0, "A rusty key. Opens dungeon doors.", 0))
     ));
 
-    // ---- SCENE 14: Skeleton Captain (Combat) ----
-    // East Wing final boss
+    // ---- SCENE 25: Locked Door (East Wing) ----
+    // Has key -> 26 Puzzle, no key -> 27 Combat (harder path)
+    scenes.push_back(new LockedDoorScene(
+        25,
+        "You reach a heavy iron door blocking the corridor.\n"
+        "A large keyhole is set into the door.\n"
+        "There is no other obvious way through.",
+        "Use a key to open the door",
+        "Try to find another way around",
+        "You check your inventory for a key...",
+        "You search the walls for another passage.\n"
+        "You find a narrow crack but have to squeeze through, taking damage.",
+        26, 27,
+        "Dungeon Key", 27, 20
+    ));
+
+    // ---- SCENE 26: Anagram Puzzle ----
+    // A (answer) -> 28 East Mini-Boss
+    // B (skip)   -> 27 Combat (harder path)
+    scenes.push_back(new PuzzleScene(
+        26,
+        "Beyond the door you find a chamber with a strange inscription.\n"
+        "It reads: Unscramble this word to disable the trap ahead.\n"
+        "The word is: DSWOR",
+        "Try to unscramble it",
+        "Ignore it and move on",
+        "You study the letters carefully...",
+        "You walk past. Suddenly arrows fire from the walls!",
+        28, 27,
+        "What is the unscrambled word?",
+        "sword",
+        15, 15
+    ));
+
+    // ---- SCENE 27: Skeleton Guards (Combat) ----
+    // Harder path - no key or skipped puzzle
+    // Both -> 14
+    scenes.push_back(new CombatScene(
+        27,
+        "Two skeleton guards block the passage.\n"
+        "They raise their weapons and advance.\n"
+        "You have no choice but to fight.",
+        "Fight the skeletons",
+        "Try to run past",
+        "You charge at the skeletons!",
+        "You try to dodge past...",
+        45, 45,
+        Enemy("Skeleton Guards", 55, 14, 2, 25,
+            Item("Stale Bread", ItemType::FOOD, 15, "Old but edible. Health +15", 0))
+    ));
+
+    // ---- SCENE 28: Stone Troll - East Mini-Boss (Combat) ----
+    // Both -> 14
+    scenes.push_back(new CombatScene(
+        28,
+        "You enter a large chamber.\n"
+        "A massive stone troll sits in the centre, guarding the passage.\n"
+        "It roars and picks up a giant club.",
+        "Fight the troll",
+        "Try to sneak past while it is distracted",
+        "You charge at the troll with everything you have!",
+        "You attempt to creep past...",
+        45, 45,
+        Enemy("Stone Troll", 60, 15, 3, 35,
+            Item("Troll Club", ItemType::WEAPON, 9, "Massive and heavy. Attack +9", 10))
+    ));
+
+    // ---- SCENE 45: Fallen Knight (Item) ----
+    // Before East Wing Boss
+    // Both -> 14
+    scenes.push_back(new ItemScene(
+        45,
+        "Before the throne room door you find the body of a fallen knight.\n"
+        "He died fighting the same enemy you are about to face.\n"
+        "He has two items you can take.",
+        "Take the enchanted blade",
+        "Take the knight's shield",
+        "You pick up the blade. It feels powerful.",
+        "You put on the shield. Heavy but solid.",
+        14, 14,
+        Item("Enchanted Blade",  ItemType::WEAPON, 10, "Glows with power. Attack +10", 12),
+        Item("Knight's Shield",  ItemType::ARMOUR,  9, "Heavy and solid. Defense +9",  12)
+    ));
+
+    // ---- SCENE 14: Skeleton Captain - East Wing Boss (Combat) ----
+    // Both -> 99
     scenes.push_back(new CombatScene(
         14,
         "You reach the east entrance of the throne room.\n"
         "A skeleton captain in full armour blocks the door.\n"
         "He raises a massive axe and lets out a hollow roar.",
         "Fight the Skeleton Captain",
-        "Try to find a weakness",
+        "Try to find a weakness first",
         "You charge at the captain with everything you have!",
         "You circle him slowly, looking for an opening...",
         99, 99,
-        Enemy("Skeleton Captain", 70, 18, 8, 50,
-            Item("Captain's Axe", ItemType::WEAPON, 10, "A heavy battle axe. Attack +10", 12))
+        Enemy("Skeleton Captain", 75, 16, 4, 50)
     ));
 
     // ==================== WEST WING ====================
 
     // ---- SCENE 10: The Prisoner (Lore) ----
-    // A (free him) -> Scene 11 (combat - prisoner panics, alerts goblins)
-    // B (leave him) -> Scene 12 (item - sneak past, find weapon)
+    // A (free) -> 11 Combat (noise alerts goblins)
+    // B (leave) -> 12 Item (sneak past quietly)
     scenes.push_back(new Scene(
         10,
         "You enter the west corridor and find a man locked in a cage.\n"
@@ -218,14 +292,14 @@ void GameManager::setupScenes() {
         "Free the prisoner",
         "Leave him and move on",
         "You unlock the cage. The man runs out - and trips over a barrel.\n"
-        "The noise echoes through the corridor. You hear goblins shouting.",
+        "The noise echoes. You hear goblins shouting.",
         "You walk away quietly. The man watches you go in silence.",
         11, 12
     ));
 
     // ---- SCENE 11: Alerted Goblins (Combat) ----
-    // Prisoner panicked and alerted the goblins - harder fight
-    // Both -> Scene 13
+    // Freeing prisoner caused noise
+    // Both -> 13
     scenes.push_back(new CombatScene(
         11,
         "Three goblins come running around the corner.\n"
@@ -236,12 +310,13 @@ void GameManager::setupScenes() {
         "You stand your ground!",
         "You turn and run...",
         13, 13,
-        Enemy("Alerted Goblins", 55, 16, 3, 20)
+        Enemy("Alerted Goblins", 50, 14, 2, 20,
+            Item("Goblin Rations", ItemType::FOOD, 20, "Smells bad but edible. Health +20", 0))
     ));
 
     // ---- SCENE 12: Quiet Sneak (Item) ----
-    // Left the prisoner - sneaked past quietly, found a weapon
-    // Both -> Scene 13
+    // Left prisoner - sneaked past quietly
+    // Both -> 13
     scenes.push_back(new ItemScene(
         12,
         "You move through the corridor quietly.\n"
@@ -249,21 +324,22 @@ void GameManager::setupScenes() {
         "you find two useful items.",
         "Take the goblin axe",
         "Take the goblin armour",
-        "You pick up the axe. It is crude but effective.",
-        "You put on the goblin armour. Smells bad but works.",
+        "You pick up the axe. Crude but effective.",
+        "You put on the armour. Smells bad but works.",
         13, 13,
-        Item("Goblin Axe",   ItemType::WEAPON, 7, "Crude but sharp. Attack +7", 8),
-        Item("Goblin Armour",ItemType::ARMOUR, 5, "Smells terrible. Defense +5", 7)
+        Item("Goblin Axe",    ItemType::WEAPON, 7, "Crude but sharp. Attack +7", 8),
+        Item("Goblin Armour", ItemType::ARMOUR, 5, "Smells terrible. Defense +5", 7)
     ));
 
-    // ---- SCENE 13: 6x7 Door Puzzle (Puzzle) ----
-    // Solved -> Scene 15 (lore - trap room, take damage but find item)
-    // Failed -> Scene 16 (item - fall through trap door, find chest below)
+    // ---- SCENE 13: Number Lock Puzzle ----
+    // A (answer) -> 15 Scene (door opens, pressure plate room)
+    // B (skip)   -> 16 Item (trapdoor drops you below)
     scenes.push_back(new PuzzleScene(
         13,
         "You arrive at a heavy door with a number lock.\n"
-        "An inscription reads: Only those who know the answer may pass.",
-        "Try to solve the inscription",
+        "An inscription reads: Only those who know the answer may pass.\n"
+        "What is 6 x 7?",
+        "Answer the inscription",
         "Look for another way",
         "You study the inscription carefully...",
         "You look around and find a trapdoor in the floor.",
@@ -273,47 +349,46 @@ void GameManager::setupScenes() {
         10, 0
     ));
 
-    // ---- SCENE 15: Pressure Plate Room (Lore) ----
-    // Solved puzzle - door opened but room has pressure plates
-    // Both -> Scene 24
-    scenes.push_back(new Scene(
+    // ---- SCENE 15: Pressure Plate Room (Item) ----
+    // Both -> 17
+    scenes.push_back(new ItemScene(
         15,
         "The door opens into a wide room.\n"
         "Too late you notice the floor is covered in pressure plates.\n"
-        "Click. Click. Click. Arrows fire from the walls.\n"
-        "You sprint through, taking hits along the way.\n"
-        "You take 20 damage but make it through.\n"
-        "On the other side you find a health potion on a shelf.",
-        "Grab the potion and keep moving",
-        "Ignore it and move on quickly",
-        "You snatch the potion. Health +25.",
-        "You run past it. No time.",
-        24, 24
+        "You carefully navigate through and make it to the other side.\n"
+        "On a shelf you find two useful items.",
+        "Take the health potion",
+        "Take the iron shield",
+        "You grab the potion. It looks potent.",
+        "You pick up the shield. Solid protection.",
+        17, 17,
+        Item("Health Potion", ItemType::FOOD,   30, "Restores health. Health +30", 0),
+        Item("Iron Shield",   ItemType::ARMOUR,  6, "Solid protection. Defense +6", 10)
     ));
 
     // ---- SCENE 16: Trap Door Below (Item) ----
-    // Failed puzzle - fell through the floor
-    // Both -> Scene 24
+    // Skipped puzzle - fell through floor
+    // Both -> 17
     scenes.push_back(new ItemScene(
         16,
         "The trapdoor drops you into a lower room.\n"
         "Soft landing - you are not hurt.\n"
         "The room is dusty and forgotten.\n"
         "In the corner you find an old chest with two items inside.",
-        "Take the steel gauntlets",
+        "Take the chainmail vest",
         "Take the war hammer",
-        "You put on the gauntlets. Your fists feel stronger.",
-        "You lift the war hammer. It is heavy but powerful.",
-        24, 24,
-        Item("Steel Gauntlets", ItemType::ARMOUR, 7, "Heavy hand armour. Defense +7", 10),
-        Item("War Hammer",      ItemType::WEAPON, 8, "Slow but devastating. Attack +8", 10)
+        "You put on the chainmail. Solid protection.",
+        "You lift the war hammer. Heavy but devastating.",
+        17, 17,
+        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8", 12),
+        Item("War Hammer",     ItemType::WEAPON, 8, "Slow but devastating. Attack +8", 10)
     ));
 
-    // ---- SCENE 24: Skeleton Archer (Combat) ----
-    // Both west paths merge here
-    // Both -> Scene 18
+    // ---- SCENE 17: Skeleton Archer (Combat) ----
+    // Drop: Iron Key (40% chance)
+    // Both -> 40 LockedDoor
     scenes.push_back(new CombatScene(
-        24,
+        17,
         "A skeleton archer stands at the end of the corridor.\n"
         "It draws its bow and fires before you can react.\n"
         "The arrow grazes your arm. It steps closer.",
@@ -321,14 +396,30 @@ void GameManager::setupScenes() {
         "Try to dodge and close the distance",
         "You charge at the skeleton!",
         "You weave between arrows and rush it...",
-        18, 18,
-        Enemy("Skeleton Archer", 40, 15, 1, 20,
-            Item("Elven Bow", ItemType::WEAPON, 5, "A fine bow. Attack +5", 10))
+        40, 40,
+        Enemy("Skeleton Archer", 40, 13, 1, 20,
+            Item("Iron Key", ItemType::KEY, 0, "A heavy iron key. Opens iron doors.", 0))
+    ));
+
+    // ---- SCENE 40: Locked Door (West Wing) ----
+    // Has key -> 18 Puzzle, no key -> 41 Combat (harder path)
+    scenes.push_back(new LockedDoorScene(
+        40,
+        "You reach a reinforced iron door blocking the corridor.\n"
+        "A heavy lock seals it shut.\n"
+        "There is no obvious way through.",
+        "Use a key to open the door",
+        "Try to find another way around",
+        "You check your inventory for a key...",
+        "You search for another route.\n"
+        "You find a narrow gap but have to force through.",
+        18, 41,
+        "Iron Key", 41, 20
     ));
 
     // ---- SCENE 18: Clock Riddle (Puzzle) ----
-    // Solved -> Scene 19 (combat - goblin shaman was guarding the passage)
-    // Failed -> Scene 20 (item - long way around, find armour)
+    // A (answer) -> 19 Combat (door opens, shaman was guarding it)
+    // B (skip)   -> 20 Item (long way around)
     scenes.push_back(new PuzzleScene(
         18,
         "You reach a large ornate door.\n"
@@ -336,8 +427,8 @@ void GameManager::setupScenes() {
         "I have hands but cannot clap. What am I?",
         "Answer the riddle",
         "Look for another way around",
-        "You speak your answer confidently...",
-        "You search the walls for a hidden passage...",
+        "You speak your answer. The door swings open...",
+        "You search the walls and find a hidden passage.",
         19, 20,
         "What am I?",
         "clock",
@@ -345,8 +436,8 @@ void GameManager::setupScenes() {
     ));
 
     // ---- SCENE 19: Goblin Shaman (Combat) ----
-    // Solving puzzle opened passage - shaman was guarding it
-    // Both -> Scene 22
+    // Door opened - shaman was guarding it
+    // Both -> 42
     scenes.push_back(new CombatScene(
         19,
         "The door swings open to reveal a goblin shaman.\n"
@@ -356,45 +447,133 @@ void GameManager::setupScenes() {
         "Try to dodge the fireball and run past",
         "You deflect the fireball and charge!",
         "You roll to the side...",
-        22, 22,
-        Enemy("Goblin Shaman", 45, 17, 2, 25,
+        42, 42,
+        Enemy("Goblin Shaman", 45, 14, 1, 25,
             Item("Shaman Staff", ItemType::WEAPON, 6, "Crackles with energy. Attack +6", 9))
     ));
 
     // ---- SCENE 20: Long Way Around (Item) ----
-    // Failed riddle - took the long corridor, found armour on a dead adventurer
-    // Both -> Scene 22
+    // Skipped puzzle - long corridor, found dead adventurer
+    // Both -> 42
     scenes.push_back(new ItemScene(
         20,
         "You find a hidden passage along the wall.\n"
         "It is long and narrow.\n"
         "At the end you find the body of a dead adventurer.\n"
         "He has two items you can use.",
-        "Take the chainmail vest",
         "Take the battle axe",
-        "You put on the chainmail. Solid protection.",
+        "Take the plate armour",
         "You pick up the axe. Well balanced.",
-        22, 22,
-        Item("Chainmail Vest", ItemType::ARMOUR, 8, "Strong protection. Defense +8", 12),
-        Item("Battle Axe",     ItemType::WEAPON, 7, "Well balanced axe. Attack +7", 10)
+        "You put on the plate armour. Heavy but solid.",
+        42, 42,
+        Item("Battle Axe",   ItemType::WEAPON, 7, "Well balanced axe. Attack +7", 10),
+        Item("Plate Armour", ItemType::ARMOUR, 9, "Heavy protection. Defense +9", 12)
     ));
 
-    // ---- SCENE 22: Dark Wizard (Combat) ----
-    // West Wing final boss -> Victory 2 (101)
+    // ---- SCENE 41: Orc Guards (Combat) ----
+    // Harder path - no key
+    // Both -> 42
+    scenes.push_back(new CombatScene(
+        41,
+        "Two orc guards step out of the shadows.\n"
+        "They snarl and raise their axes.\n"
+        "You have no choice but to fight.",
+        "Fight the orcs",
+        "Try to run past",
+        "You charge at the orcs!",
+        "You try to dodge past...",
+        42, 42,
+        Enemy("Orc Guards", 55, 15, 3, 25,
+            Item("Orc Axe", ItemType::WEAPON, 8, "Heavy and brutal. Attack +8", 10))
+    ));
+
+    // ---- SCENE 42: Shadow Riddle (Puzzle) ----
+    // A (answer) -> 43 Item (secret armoury revealed)
+    // B (skip)   -> 44 Combat (triggered trap, dark knight appears)
+    scenes.push_back(new PuzzleScene(
+        42,
+        "You enter a dimly lit chamber.\n"
+        "Words glow on the wall before you:\n"
+        "I follow you all day but disappear at night.\n"
+        "I copy your every move but make no sound. What am I?",
+        "Answer the riddle",
+        "Ignore it and push forward",
+        "You study the glowing words...",
+        "You push forward and trigger a trap!\n"
+        "A swinging blade catches you.",
+        43, 44,
+        "What am I?",
+        "shadow",
+        15, 15
+    ));
+
+    // ---- SCENE 43: Secret Armoury (Item) ----
+    // Puzzle solved - secret wall opens
+    // Both -> 22
+    scenes.push_back(new ItemScene(
+        43,
+        "The wall slides open revealing a secret armoury.\n"
+        "Two powerful items sit on a stone pedestal.\n"
+        "A previous adventurer must have hidden them here.",
+        "Take the enchanted sword",
+        "Take the dragon scale armour",
+        "You grab the sword. It feels perfectly balanced.",
+        "You put on the armour. Incredibly light yet strong.",
+        46, 46,
+        Item("Enchanted Sword",     ItemType::WEAPON, 10, "Perfectly balanced. Attack +10", 12),
+        Item("Dragon Scale Armour", ItemType::ARMOUR, 10, "Light yet strong. Defense +10", 12)
+    ));
+
+    // ---- SCENE 44: Dark Knight - West Mini-Boss (Combat) ----
+    // Triggered trap
+    // Both -> 22
+    scenes.push_back(new CombatScene(
+        44,
+        "A dark knight steps out from behind a pillar.\n"
+        "He was waiting for intruders to trigger the trap.\n"
+        "He raises a black sword and charges!",
+        "Fight the dark knight",
+        "Try to dodge and find an opening",
+        "You meet his charge head on!",
+        "You sidestep and look for a gap in his armour...",
+        46, 46,
+        Enemy("Dark Knight", 65, 15, 3, 35,
+            Item("Black Sword", ItemType::WEAPON, 9, "Dark and sharp. Attack +9", 12))
+    ));
+
+    // ---- SCENE 46: Abandoned Pack (Item) ----
+    // Before West Wing Boss
+    // Both -> 22
+    scenes.push_back(new ItemScene(
+        46,
+        "You spot an abandoned adventurer's pack near the throne room entrance.\n"
+        "Someone left in a hurry - or didn't make it back.\n"
+        "Inside you find two useful items.",
+        "Take the runic sword",
+        "Take the runic armour",
+        "You grab the sword. It hums with ancient power.",
+        "You put on the armour. Surprisingly light.",
+        22, 22,
+        Item("Runic Sword",  ItemType::WEAPON, 10, "Ancient and powerful. Attack +10", 12),
+        Item("Runic Armour", ItemType::ARMOUR,  9, "Light yet strong. Defense +9",     12)
+    ));
+
+    // ---- SCENE 22: Dark Wizard - West Wing Boss (Combat) ----
+    // Both -> 99
     scenes.push_back(new CombatScene(
         22,
         "You burst into the throne room from the west.\n"
         "A dark wizard stands at the throne, the crown floating above his hand.\n"
-        "He turns and smiles. You will not leave here alive.\n"
+        "He turns and smiles coldly.\n"
+        "You will not leave here alive.\n"
         "He raises his staff and the room fills with dark energy.",
         "Fight the Dark Wizard",
         "Try to grab the crown and run",
         "You charge at the wizard with everything you have!",
         "You sprint for the crown...",
         99, 99,
-        Enemy("Dark Wizard", 80, 20, 5, 60,
-            Item("Wizard's Staff", ItemType::WEAPON, 12, "Ancient and powerful. Attack +12", 15))
-        ));
+        Enemy("Dark Wizard", 80, 17, 3, 60)
+    ));
 }
 
 void GameManager::showMainMenu() {
@@ -483,6 +662,16 @@ void GameManager::gameLoop() {
             if (!player.isAlive()) {
                 break;
             }
+
+            if (next == 99) {
+                cout << "\n========================================" << endl;
+                cout << "         *** VICTORY! ***" << endl;
+                cout << "========================================" << endl;
+                cout << "You have conquered the dungeon, " << player.getName() << "!" << endl;
+                cout << "Final Score: " << player.getScore() << endl;
+                break;
+            }
+
             current_scene_ID = next;
         }
     }
