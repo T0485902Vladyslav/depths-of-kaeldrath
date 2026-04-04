@@ -14,6 +14,8 @@ string SaveManager::itemTypeToString(ItemType type) const {
         result = "WEAPON";
     }else if (type == ItemType::ARMOUR) {
         result = "ARMOUR";
+    }else if (type == ItemType::KEY) {
+        result = "KEY";
     }
 
     return result;
@@ -25,6 +27,8 @@ ItemType SaveManager::stringToItemType(const string& str) const {
         result = ItemType::WEAPON;
     }else if (str == "ARMOUR") {
         result = ItemType::ARMOUR;
+    }else if (str == "KEY") {
+        result = ItemType::KEY;
     }
 
     return result;

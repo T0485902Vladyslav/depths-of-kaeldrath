@@ -6,6 +6,7 @@ enum class ItemType {
     WEAPON,
     ARMOUR,
     FOOD,
+    KEY,
 };
 
 static const int MAX_HEALTH = 100;

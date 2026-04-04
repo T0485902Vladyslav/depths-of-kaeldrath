@@ -47,4 +47,7 @@ public:
     void useFood(int index);
     void showInventory();
     void showPlayerStats() const;
+
+    bool hasKey(const string& key_name) const;
+    void removeKey(const string& key_name);
 };

@@ -41,7 +41,7 @@ int Item::getMaxDurability() const {
 
 bool Item::isBroken() const {
     bool broken = false;
-    if (type != ItemType::FOOD && durability <= 0) {
+    if (type != ItemType::FOOD && type != ItemType::KEY && durability <= 0) {
         broken = true;
     }
     return broken;

@@ -21,4 +21,6 @@ add_executable(T0485902projectC___1 main.cpp
         GameManager.cpp
         GameManager.h
         SaveManager.cpp
-        SaveManager.h)
+        SaveManager.h
+        LockedDoorScene.cpp
+        LockedDoorScene.h)

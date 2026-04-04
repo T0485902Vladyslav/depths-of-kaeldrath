@@ -316,3 +316,22 @@ void Player::showPlayerStats() const {
     cout << "Lives: " << lives << endl;
     cout << "Score: " << score << endl;
 }
+
+bool Player::hasKey(const string& key_name) const {
+    bool found = false;
+    for (int i = 0; i < (int)inventory.size(); i++) {
+        if (inventory[i].getType() == ItemType::KEY && inventory[i].getName() == key_name) {
+            found = true;
+        }
+    }
+    return found;
+}
+
+void Player::removeKey(const string& key_name) {
+    for (int i = 0; i < (int)inventory.size(); i++) {
+        if (inventory[i].getType() == ItemType::KEY && inventory[i].getName() == key_name) {
+            inventory.erase(inventory.begin() + i);
+            break;
+        }
+    }
+}
