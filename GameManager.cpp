@@ -433,23 +433,23 @@ void GameManager::setupPlayer() {
 
 void GameManager::gameLoop() {
     while (player.isAlive()) {
-        cout << "\n[C] Continue   [I] Inventory & Stats: ";
+        cout << "\n[C] Continue   [I] Inventory & Stats   [S] Save & Exit: ";
         char opt;
-        bool validInput = false;
+        bool valid_input = false;
 
-        while (!validInput) {
+        while (!valid_input) {
             string line;
             getline(cin, line);
 
             if (line.empty()) {
-                cout << "Input cannot be empty. Enter C or I: ";
+                cout << "Input cannot be empty. Enter C, I or S: ";
             } else {
                 opt = toupper(line[0]);
 
-                if (opt == 'C' || opt == 'I') {
-                    validInput = true;
+                if (opt == 'C' || opt == 'I' || opt == 'S') {
+                    valid_input = true;
                 } else {
-                    cout << "Invalid input. Enter C or I: ";
+                    cout << "Invalid input. Enter C, I or S: ";
                 }
             }
         }
@@ -457,12 +457,18 @@ void GameManager::gameLoop() {
         if (opt == 'I') {
             player.showInventory();
             player.showPlayerStats();
-        } else {
+        }
+        else if (opt == 'S') {
+            save_manager.saveGame(player, current_scene_ID);
+            cout << "Goodbye, " << player.getName() << "! See you next time." << endl;
+            break;
+        }
+        else {
             Scene* current = nullptr;
 
-            for (int i = 0; i < scenes.size(); i++) {
-                if (scenes[i]->getSceneId() == current_scene_ID) {
-                    current = scenes[i];
+            for (auto & scene : scenes) {
+                if (scene->getSceneId() == current_scene_ID) {
+                    current = scene;
                     break;
                 }
             }
@@ -493,39 +499,39 @@ void GameManager::gameLoop() {
 void GameManager::run() {
     showMainMenu();
 
-    int menuChoice = 0;
-    bool validInput = false;
-    int maxChoice = save_manager.hasSave() ? 3 : 2;
+    int menu_choice = 0;
+    bool valid_input = false;
+    int max_choice = save_manager.hasSave() ? 3 : 2;
 
-    while (!validInput) {
+    while (!valid_input) {
         string line;
         getline(cin, line);
 
         if (line.empty()) {
-            cout << "Input cannot be empty. Enter 1 or 2: ";
+            cout << "Input cannot be empty. Enter 1 to " << max_choice << ": ";
         } else {
             try {
                 size_t pos;
-                menuChoice = stoi(line, &pos);
+                menu_choice = stoi(line, &pos);
 
                 if (pos != line.size()) {
-                    cout << "Invalid input. Enter a number: ";
-                } else if (menuChoice < 1 || menuChoice > maxChoice) {
-                    cout << "Invalid choice. Enter 1-" << maxChoice;
+                    cout << "Invalid input. Enter 1 to " << max_choice << ": ";
+                } else if (menu_choice < 1 || menu_choice > max_choice) {
+                    cout << "Invalid choice. Enter 1 to " << max_choice << ": ";
                 } else {
-                    validInput = true;
+                    valid_input = true;
                 }
             } catch (...) {
-                cout << "Invalid input. Enter 1 or 2: ";
+                cout << "Invalid input. Enter 1 to " << max_choice << ": ";
             }
         }
     }
 
     if (save_manager.hasSave()) {
-        if (menuChoice == 3) {
+        if (menu_choice == 3) {
             cout << "\nGoodbye!" << endl;
         }
-        else if (menuChoice == 2) {
+        else if (menu_choice == 2) {
             save_manager.loadGame(player, current_scene_ID);
             gameLoop();
         }
@@ -535,7 +541,7 @@ void GameManager::run() {
         }
     }
     else {
-        if (menuChoice == 2) {
+        if (menu_choice == 2) {
             cout << "\nGoodbye!" << endl;
         }
         else {
