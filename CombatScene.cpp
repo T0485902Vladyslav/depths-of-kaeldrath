@@ -7,7 +7,7 @@ using namespace std;
 
 CombatScene::CombatScene(int cindex, string cdescription, string cchoiceA, string cchoiceB,
     string cconsequenceA, string cconsequenceB, int cnextSceneA, int cnextSceneB, Enemy cenemy)
-: Scene(cindex, cdescription, cchoiceA, cchoiceB,
+            : Scene(cindex, cdescription, cchoiceA, cchoiceB,
             cconsequenceA, cconsequenceB, cnextSceneA, cnextSceneB), enemy(cenemy){}
 
 // Runs the turn-based combat loop between player and enemy
@@ -19,12 +19,14 @@ void CombatScene::runCombat(Player& player) {
 
     Enemy currentEnemy = enemy;
 
+    // (cplusplus.com, 2024)
     // pause for better effect of fight
-    this_thread::sleep_for(chrono::milliseconds(1500));
+    std::this_thread::sleep_for(chrono::milliseconds(1500));
 
     while (currentEnemy.isAlive() && player.isAlive()) {
-        // Add random variance of -2 to +2 to attack damage
-        int playerDamage = player.getAttackDamage() + (rand() % 5) - 2;
+        // (w3schools.com, 2024)
+        // Add random variance of -3 to +3 to attack damage
+        int playerDamage = player.getAttackDamage() + (rand() % 7) - 3;
         if (playerDamage < 0) {
             playerDamage = 0;
         }
@@ -42,7 +44,7 @@ void CombatScene::runCombat(Player& player) {
 
         // Track lives before hit to detect if player died from this attack
         int lives_before = player.getLives();
-        int enemyDamage = currentEnemy.getAttack() + (rand() % 5) - 2;
+        int enemyDamage = currentEnemy.getAttack() + (rand() % 7) - 3;
         if (enemyDamage < 0) {
             enemyDamage = 0;
         }
@@ -51,7 +53,7 @@ void CombatScene::runCombat(Player& player) {
         cout << currentEnemy.getName() << " attacks you for " << enemyDamage
              << " damage! (Your HP: " << player.getHealth() << ")" << endl;
 
-        // If player lost a life from this hit, it exits combat, scene will retry
+        // If player lost a life from this hit, it exits combat, the player will try again
         if (player.getLives() < lives_before) {
             cout << "You have been defeated! Lives remaining: " << player.getLives() << endl;
             player.resetAfterDeath();
@@ -106,7 +108,7 @@ int CombatScene::play(Player& player) {
             cout << "You take 15 damage while running" << endl;
         } else {
             cout << "\nYou failed to avoid fight! The enemy attacks!" << endl;
-            int enemyDamage = enemy.getAttack() + (rand() % 5) - 2;
+            int enemyDamage = enemy.getAttack() + (rand() % 7) - 3;
             player.takeDamage(enemyDamage);
             cout << enemy.getName() << " hits you for " << enemyDamage << " damage." << endl;
             cout << "You are forced to fight!" << endl;

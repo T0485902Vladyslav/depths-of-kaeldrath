@@ -18,6 +18,8 @@ GameManager::~GameManager() {
     }
 }
 
+//Claude (2026)
+//Method that adds Scenes to vector<Scene*> (the whole storyline of the game is based on this)
 void GameManager::setupScenes() {
 
     // ==================== SHARED START ====================
@@ -208,10 +210,27 @@ void GameManager::setupScenes() {
         "Ignore it and move on",
         "You study the letters carefully...",
         "You walk past. Suddenly arrows fire from the walls!",
-        28, 27,
+        47, 47,
         "What is the unscrambled word?",
         "sword",
         15, 15
+    ));
+
+    // ---- SCENE 47: Hidden Stash (Item) ----
+    // Puzzle solved - found a hidden stash
+    // Both -> 28
+    scenes.push_back(new ItemScene(
+        47,
+        "The trap ahead is disabled.\n"
+        "You spot a loose stone in the wall.\n"
+        "Behind it is a hidden stash left by a previous adventurer.",
+        "Take the steel sword",
+        "Take the reinforced shield",
+        "You grab the sword. Well crafted.",
+        "You pick up the shield. Sturdy and reliable.",
+        28, 28,
+        Item("Steel Sword",       ItemType::WEAPON, 8, "Well crafted. Attack +8",     10),
+        Item("Reinforced Shield", ItemType::ARMOUR, 7, "Sturdy and reliable. Defense +7", 10)
     ));
 
     // ---- SCENE 27: Skeleton Guards (Combat) ----
@@ -226,9 +245,26 @@ void GameManager::setupScenes() {
         "Try to run past",
         "You charge at the skeletons!",
         "You try to dodge past...",
-        45, 45,
+        48, 48,
         Enemy("Skeleton Guards", 55, 14, 2, 25,
             Item("Stale Bread", ItemType::FOOD, 15, "Old but edible. Health +15", 0))
+    ));
+
+    // ---- SCENE 48: Skeleton Patrol (Combat) ----
+    // Harder path - after skeleton guards
+    // Both -> 45
+    scenes.push_back(new CombatScene(
+        48,
+        "You push through the passage and run into another patrol.\n"
+        "A skeleton and two goblin scouts block your way.\n"
+        "They raise their weapons.",
+        "Fight them",
+        "Try to run past",
+        "You charge forward!",
+        "You try to dodge through...",
+        45, 45,
+        Enemy("Skeleton Patrol", 55, 15, 3, 25,
+            Item("Scout Dagger", ItemType::WEAPON, 6, "Light and quick. Attack +6", 8))
     ));
 
     // ---- SCENE 28: Stone Troll - East Mini-Boss (Combat) ----

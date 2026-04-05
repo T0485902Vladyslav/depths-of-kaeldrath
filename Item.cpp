@@ -62,5 +62,7 @@ void Item::reduceDurability() {
 // To print item name, description and effect value to user
 void Item::printItemInfo() const {
     cout << "{" << name << "} " << description << endl;
-    cout << "Effect: " << effect_value << endl;
+    if (type != ItemType::KEY) {
+        cout << "Effect: " << effect_value << endl;
+    }
 }
