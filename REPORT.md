@@ -1383,54 +1383,35 @@ int main() {
 
 Screenshot 1: Main menu validation for empty and invalid inputs, program proceed after valid input 
 
-
-
 ![fd](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=850FCCD5-296E-4F41-A745-6E6B4AA7AEF4&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.43.png)
 
 Screenshot 2: Player name validation preventing empty input
-
-
 
 ![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=437FDFBE-7239-46D4-9CFD-EEBA6FA95795&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.44.png)
 
 Screenshot 3: Game loop validation for invalid inputs
 
-
-
 ![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=D14AC947-78BE-4CD4-973D-390CA5BEB2CA&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.45.png)
 
 Screenshot 4: Scene choice validation  
-
-
 
 ![gf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=6D5E32E5-E2EF-45D3-8237-C9F2AAD452DF&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.49.png)
 
 Screenshot 5: Puzzle scene validation for empty input
 
-
-
 ![gdf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=C3E2BD6B-0280-4EF8-B631-179FA0367A51&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.54.png)
 
 Screenshot 6: Inventory validation for invalid item indexes
-
-
 
 ![gfd](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=B7C137AF-03F0-4A20-8FA6-E801E16F520C&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2021.53.png)
 
 Screenshot 7: Inventory system validation for invalid inputs
 
-
-
 ![gdf](/private/var/folders/60/82cg9ybd2bg7kgrh339d3zpr0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=5F1F4424-95A5-45DD-B900-761D0FD61DE7&code=001&library=1&type=1&mode=1&loc=true&cap=true.png/Image%2015-03-2026%20at%2022.20.png)
 
 Screenshot 8: Game over output after player loses all lives
 
-
-
-
 ### Technical elements
-
-
 
 **Constants**
 
@@ -1438,13 +1419,9 @@ Two global constants control the game's limits. MAX_HEALTH is set to 100 and
 defines the maximum health a player can have, preventing healing beyond this
 value. MAX_INVENTORY is set to 10 and defines the maximum number of items a player can carry.
 
-
-
 **Enum ItemType**
 
 An enumeration that defines for now the three categories an item can belong to: WEAPON, ARMOUR, and FOOD. This makes the code more readable and allows the program to handle each item type differently without relying on raw numbers or strings.
-
-
 
 **Class Item**
 
@@ -1452,26 +1429,18 @@ Represents a collectable object in the game. Each item stores a name, type, effe
 methods to access its data and methods to reduce durability and check if an
 item is broken.
 
-
-
 **Class Player**
 
 Represents the human player and holds all player state including name, health, lives, base attack, score, and inventory. The inventory is stored as a vector of Item objects. Two integer fields equipped_weapon_index and equipped_armour_index track
 which inventory slots are currently equipped, using -1 to indicate nothing is equipped. Key methods include takeDamage() which reduces health and handles life loss, heal() which restores health up to the maximum, addItem() which adds items to the inventory, equipItem() which sets the equipped index for a weapon or armour, useFood() which consumes a food item and heals the player, and showInventory() and showPlayerStats() which display information to the player.
 
-
-
 **Class Enemy**
 
 Represents an enemy the player can fight. Stores name, health, attack, defense, score reward, and an optional drop item. The takeDamage() method reduces enemy health accounting for its defense value. The isAlive() method returns whether the enemy still has health remaining. Some enemies are constructed with a drop item that has a chance to be awarded to the player after defeat.
 
-
-
 **Class Scene (Parent Class)**
 
 The base class for all scene types. Stores a scene ID, description text, two choices (A and B), their consequence messages, and the next scene IDs they lead to. Also stores lastChoice which records whether the player selected A or B, used by subclasses to determine outcomes. The virtual play() method is overridden by each subclass to define specific behaviour. The presentChoices() method handles displaying options and reading validated player input.
-
-
 
 **Class PuzzleScene (inherits Scene)**
 
@@ -1481,13 +1450,9 @@ answer. A correct answer awards score points. An incorrect answer or skipping
 the puzzle (choice B) deals damage to the player. Both outcomes progress to the
 next scene.
 
-
-
 **Class ItemScene (inherits Scene)**
 
 A scene type where the player chooses between two items to pick up. The lastChoice field from the base class determines which item is added to the player's inventory.
-
-
 
 **Class CombatScene (inherits Scene)**
 
@@ -1496,22 +1461,16 @@ random roll determining whether the player escapes with minor damage or is
 forced to fight anyway. The runCombat() method runs an automatic turn-based battle loop where both the player and enemy deal randomised damage
 each round until one is defeated.
 
-
-
 **Class GameManager**
 
 The central controller of the game. It owns a vector of Scene pointers and a Player object. The setupScenes() method initialises all scenes and adds them to the
 vector. The setupPlayer() method reads the player's name and creates their character. The gameLoop() method runs the main game loop, finding the current scene by ID and calling its play() method until the player runs out of lives. The run() method displays the main menu and starts the game.
-
-
 
 **Data Structures**
 
 A vector<Item> is
 used for the player's inventory, allowing items to be added and removed
 dynamically. A vector<Scene*> is used in GameManager to store pointers to all scenes, enabling polymorphism so that play() calls the correct overridden version for each scene type.
-
-
 
 **Input Validation**
 

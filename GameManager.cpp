@@ -635,10 +635,16 @@ void GameManager::setupPlayer() {
     cout << "\nEnter your name, brave adventurer: ";
 
     getline(cin, name);
+    // (GeeksforGeeks, 2024)
+    //Method to trim whitespace from user input
+    name.erase(0, name.find_first_not_of(' '));
+    name.erase(name.find_last_not_of(' ') + 1);
 
     while (name.empty()) {
         cout << "Name cannot be empty. Try again: ";
         getline(cin, name);
+        name.erase(0, name.find_first_not_of(' '));
+        name.erase(name.find_last_not_of(' ') + 1);
     }
 
     player = Player(name);

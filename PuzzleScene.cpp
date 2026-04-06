@@ -36,6 +36,10 @@ int PuzzleScene::play(Player& player) {
             cout << "Your answer: ";
             getline(cin, user_answer);
 
+            //Method to trim whitespace from user input
+            user_answer.erase(0, user_answer.find_first_not_of(' '));
+            user_answer.erase(user_answer.find_last_not_of(' ') + 1);
+
             if (user_answer.empty()) {
                 cout << "Answer cannot be empty. Try again.\n";
             } else {
@@ -57,12 +61,16 @@ int PuzzleScene::play(Player& player) {
             cout << "Your score has increased by " << score_reward << endl;
         } else {
             cout << "Wrong! The answer was: " << answer << endl;
-            player.takeDamage(damage_on_fail);
-            cout << "You take " << damage_on_fail << " damage for wrong answer!" << endl;
+            if (damage_on_fail > 0) {
+                player.takeDamage(damage_on_fail);
+                cout << "You take " << damage_on_fail << " damage!" << endl;
+            }
         }
     } else {
-        player.takeDamage(damage_on_fail);
-        cout << "You take " << damage_on_fail << " damage!" << endl;
+        if (damage_on_fail > 0) {
+            player.takeDamage(damage_on_fail);
+            cout << "You take " << damage_on_fail << " damage!" << endl;
+        }
     }
 
     return next;
