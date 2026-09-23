@@ -35,7 +35,7 @@ I built this as a university coursework project to properly practise OOP in C++ 
 
 ---
 
-## 🛠️ Built With
+## 🔧 Built With
 
 - **C++20**
 - **CMake**
@@ -148,7 +148,7 @@ cmake --build .
 
 ---
 
-## 🗂️ Project Structure
+## 📁 Project Structure
 
 | Component         | Responsibility                                                                                                 |
 | ----------------- | -------------------------------------------------------------------------------------------------------------- |
