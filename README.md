@@ -74,27 +74,20 @@ Your final score, along with the items and keys you've collected along the way, 
 
 ## 📸 Screenshots
 
-<!-- Add screenshots to a docs/ folder and update the paths below -->
-
 ### Main Menu
+![Main Menu](docs/screenshot-menu.png)
 
-![а](/Users/dushesssx/CLionProjects/T0485902projectC++%231/docs/screenshot-menu.png)
 
 ### Story Scene
-
-![пва](/Users/dushesssx/CLionProjects/T0485902projectC++%231/docs/screenshot-scene.png)
-
-
+![Story scene](docs/screenshot-scene.png)
 
 
 ### Combat
-
-![Shows the enemy's stats header and an attack exchange mid-fight.](/Users/dushesssx/CLionProjects/T0485902projectC++%231/docs/screenshot-combat.png)
+![Combat](docs/screenshot-combat.png)
 
 
 ### Inventory
-
-![Shows the inventory list with durability and the equipped weapon/armour section.](/Users/dushesssx/CLionProjects/T0485902projectC++%231/docs/screenshot-inventory.png)
+![Inventory](docs/screenshot-inventory.png)
 
 
 ---
